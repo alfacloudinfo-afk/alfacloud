@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALFACloud V1.0 — Admin Console</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Plus Jakarta Sans','Inter','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+      colors: {
+        alfa: { 50:'#eff6ff',100:'#dbeafe',500:'#2563eb',600:'#1d4ed8',700:'#1e40af',900:'#1e3a8a' },
+        ink: { 900:'#0a1226', 800:'#0f1c3f', 700:'#162a5b' }
+      },
+      boxShadow: { soft:'0 10px 40px -10px rgba(0,0,0,.15)', card:'0 4px 24px -6px rgba(15,28,63,.12)' }
+    }
+  }
+}
+</script>
+<style>
+*{scrollbar-width:thin;scrollbar-color:#c7d2fe #f1f5f9}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:#f1f5f9;border-radius:8px}
+*::-webkit-scrollbar-thumb{background:linear-gradient(#3b82f6,#06b6d4);border-radius:8px}
+#sidebar::-webkit-scrollbar{width:5px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2)}
+body{background:#eef2f9}
+.bg-grid{background-image:radial-gradient(circle at 1px 1px, rgba(37,99,235,.08) 1px, transparent 0);background-size:26px 26px}
+.sidebar-link{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:14px;color:#cbd5e1;font-size:13.5px;font-weight:600;transition:all .25s ease;border:1px solid transparent;cursor:pointer;text-align:left}
+.sidebar-link:hover{color:#fff;background:rgba(255,255,255,.07);transform:translateX(2px)}
+.sidebar-link.active{color:#fff;background:linear-gradient(135deg,#2563eb 0%,#0ea5e9 100%);box-shadow:0 8px 24px -6px rgba(37,99,235,.6);border-color:rgba(255,255,255,.2)}
+.sidebar-link.active .icon-box{background:rgba(255,255,255,.22);color:#fff}
+.icon-box{width:34px;height:34px;min-width:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);color:#93c5fd;transition:.25s}
+.sidebar-link:hover .icon-box{background:rgba(255,255,255,.15);color:#fff}
+.page{display:none}
+.page.active{display:block;animation:pageIn .45s cubic-bezier(.16,1,.3,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}50%{box-shadow:0 0 0 7px rgba(34,197,94,0)}}
+.online-dot{animation:pulseDot 2s infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes blobMove{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.15)}}
+.blob{animation:blobMove 9s ease-in-out infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.shake{animation:shake .4s}
+.card-hover{transition:.3s}
+.card-hover:hover{transform:translateY(-3px);box-shadow:0 16px 40px -12px rgba(15,28,63,.22)}
+.btn-press:active{transform:scale(.97)}
+.table-row-sel{background:#eff6ff!important;border-left:4px solid #2563eb}
+.styled-table th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;padding:12px 14px;background:#f8fafc;white-space:nowrap}
+.styled-table td{padding:12px 14px;font-size:13.5px;border-top:1px solid #f1f5f9;white-space:nowrap}
+.styled-table tbody tr{transition:.2s}
+.styled-table tbody tr:hover{background:#f8fafc}
+.toggle{position:relative;width:48px;height:26px;background:#cbd5e1;border-radius:99px;transition:.3s;cursor:pointer;flex-shrink:0}
+.toggle.on{background:linear-gradient(90deg,#2563eb,#06b6d4)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:99px;transition:.3s;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.toggle.on::after{left:25px}
+.receipt-paper{background:#fff;background-image:repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(0,0,0,.02) 28px,rgba(0,0,0,.02) 29px);border:1px dashed #cbd5e1}
+.zigzag{height:12px;background:linear-gradient(-45deg,transparent 8px,#fff 0),linear-gradient(45deg,transparent 8px,#fff 0);background-size:16px 16px;background-position:bottom}
+.toast-in{animation:toastIn .4s cubic-bezier(.16,1,.3,1)}
+@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+.modal-in{animation:modalIn .35s cubic-bezier(.16,1,.3,1)}
+@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.tab-btn{transition:.25s}
+.tab-btn.active{background:linear-gradient(135deg,#0f1c3f,#2563eb);color:#fff;box-shadow:0 8px 20px -6px rgba(37,99,235,.5)}
+input,select,textarea{outline:none}
+input:focus,select:focus,textarea:focus{border-color:#2563eb!important;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+input[type=range]{accent-color:#2563eb}
+.loader-bar{animation:loadBar 1.6s ease-in-out infinite}
+@keyframes loadBar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+.badge{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:99px;letter-spacing:.03em}
+@media print{.no-print{display:none!important}}
+</style>
+</head>
+<body class="font-sans text-slate-800">
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen" class="min-h-screen relative overflow-hidden flex items-center justify-center p-4" style="background:linear-gradient(135deg,#070d1f 0%,#0f1c3f 40%,#1e3a8a 75%,#0ea5e9 130%)">
+  <div class="blob absolute w-[500px] h-[500px] rounded-full opacity-20 blur-3xl" style="background:#06b6d4;top:-120px;left:-120px"></div>
+  <div class="blob absolute w-[420px] h-[420px] rounded-full opacity-20 blur-3xl" style="background:#8b5cf6;bottom:-120px;right:-80px;animation-delay:2s"></div>
+  <div class="blob absolute w-[300px] h-[300px] rounded-full opacity-10 blur-3xl" style="background:#f59e0b;top:40%;left:55%"></div>
+  <div class="relative z-10 w-full max-w-[1050px] grid lg:grid-cols-2 rounded-[28px] overflow-hidden shadow-2xl">
+    <div class="hidden lg:flex flex-col justify-between p-10 text-white relative" style="background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.02));backdrop-filter:blur(20px);border-right:1px solid rgba(255,255,255,.12)">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-extrabold shadow-lg" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">A</div>
+          <div><div class="text-2xl font-extrabold tracking-tight">ALFA<span class="text-cyan-300">Cloud</span></div><div class="text-[11px] tracking-[.3em] text-slate-300 font-semibold">MICRO FINANCE SUITE</div></div>
+        </div>
+        <div class="mt-10 space-y-5">
+          <h1 class="text-4xl font-extrabold leading-tight">Loan & Collection<br><span class="text-transparent bg-clip-text" style="background-image:linear-gradient(90deg,#22d3ee,#a78bfa)">Management Cloud</span></h1>
+          <p class="text-slate-300 text-sm leading-relaxed">Complete admin control — customers, loans, daily collections, routes, financial analytics & thermal printing in one secure dashboard.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-8">
+          <div class="rounded-2xl p-4 text-center" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)"><div class="text-2xl font-extrabold text-cyan-300" id="loginStat1">2.4K</div><div class="text-[10px] text-slate-300 font-semibold tracking-wider">CUSTOMERS</div></div>
+          <div class="rounded-2xl p-4 text-center" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)"><div class="text-2xl font-extrabold text-amber-300">Rs 48M</div><div class="text-[10px] text-slate-300 font-semibold tracking-wider">PORTFOLIO</div></div>
+          <div class="rounded-2xl p-4 text-center" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)"><div class="text-2xl font-extrabold text-emerald-300">98.2%</div><div class="text-[10px] text-slate-300 font-semibold tracking-wider">RECOVERY</div></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between text-[11px] text-slate-400"><span>© 2026 ALFACloud • v1.0</span><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span> Server Online</span></div>
+    </div>
+    <div class="bg-white p-8 sm:p-10">
+      <div class="lg:hidden flex items-center gap-3 mb-6">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-extrabold text-white" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">A</div>
+        <div><div class="text-xl font-extrabold">ALFA<span class="text-blue-600">Cloud</span> <span class="text-xs bg-slate-900 text-white px-2 py-0.5 rounded-lg">V1.0</span></div></div>
+      </div>
+      <h2 class="text-2xl font-extrabold text-slate-900">Welcome back</h2>
+      <p class="text-sm text-slate-500 mb-6">Sign in to access the Admin Sidebar Console</p>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div><label class="text-xs font-bold text-slate-600 tracking-wide">USERNAME</label>
+          <input id="loginUser" value="admin" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold" placeholder="Enter username"></div>
+        <div><label class="text-xs font-bold text-slate-600 tracking-wide">PASSWORD</label>
+          <input id="loginPass" type="password" value="admin123" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold" placeholder="Enter password"></div>
+        <div class="flex items-center justify-between text-xs"><label class="flex items-center gap-2 font-semibold text-slate-600"><input type="checkbox" checked class="w-4 h-4 rounded accent-blue-600"> Remember me</label><a class="text-blue-600 font-bold cursor-pointer" onclick="toast('Password reset link sent to admin@alfacloud.lk','info','Reset Link')">Forgot password?</a></div>
+        <div id="loginError" class="hidden text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2"></div>
+        <button class="w-full py-3.5 rounded-xl font-extrabold text-white text-sm tracking-wide shadow-lg btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">SIGN IN TO DASHBOARD →</button>
+      </form>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <button onclick="quickLogin('admin')" class="border-2 border-blue-100 hover:border-blue-400 rounded-xl p-3 text-left transition btn-press bg-blue-50/50"><div class="text-xs font-extrabold text-blue-700">👤 ADMIN DEMO</div><div class="text-[11px] text-slate-500 font-mono">admin / admin123</div><div class="text-[10px] text-emerald-600 font-bold mt-1">● Full access • 18 items</div></button>
+        <button onclick="quickLogin('collector')" class="border-2 border-amber-100 hover:border-amber-400 rounded-xl p-3 text-left transition btn-press bg-amber-50/50"><div class="text-xs font-extrabold text-amber-700">🧾 COLLECTOR DEMO</div><div class="text-[11px] text-slate-500 font-mono">collector / col123</div><div class="text-[10px] text-amber-600 font-bold mt-1">● Limited • read-only</div></button>
+      </div>
+      <div class="mt-5 flex items-center gap-2 text-[11px] text-slate-400 font-semibold"><span class="w-2 h-2 rounded-full bg-emerald-500 online-dot"></span> Device Online • Secure connection (TLS 1.3) • Server: cloud.alfa.lk:8443</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ROOT ============ -->
+<div id="appRoot" class="hidden">
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <div id="sidebarOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-screen w-[282px] min-w-[282px] z-40 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0" style="background:linear-gradient(180deg,#070d1f 0%,#0c1a3d 55%,#10265a 100%)">
+    <div class="px-5 pt-5 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl font-extrabold text-white shadow-lg" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">A</div>
+        <div class="flex-1"><div class="text-white font-extrabold text-[17px] leading-tight">ALFA<span class="text-cyan-300">Cloud</span> <span class="text-[10px] bg-white/15 border border-white/20 px-1.5 py-0.5 rounded-md text-cyan-200">V1.0</span></div><div class="text-[10px] text-slate-400 font-semibold tracking-[.2em]">ADMIN CONSOLE</div></div>
+        <button onclick="toggleSidebar(false)" class="lg:hidden text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="mt-4 flex items-center gap-3 rounded-2xl p-3" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)">
+        <div id="userAvatar" class="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white text-sm" style="background:linear-gradient(135deg,#2563eb,#8b5cf6)">AD</div>
+        <div class="flex-1 min-w-0"><div id="userName" class="text-white text-sm font-bold truncate">Administrator</div><div id="userRole" class="text-[11px] text-cyan-300 font-semibold">● Admin • Full Access</div></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 online-dot"></div>
+      </div>
+      <div class="mt-3 relative"><input id="menuSearch" oninput="filterMenu(this.value)" placeholder="Search menu..." class="w-full text-xs font-semibold rounded-xl px-4 py-2.5 text-white placeholder-slate-500" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)"><span class="absolute right-3 top-2.5 text-slate-500 text-sm">⌕</span></div>
+    </div>
+    <nav id="sidebarNav" class="flex-1 overflow-y-auto px-4 pb-3 space-y-1">
+      <div class="text-[10px] font-extrabold tracking-[.25em] text-slate-500 px-3 pt-1 pb-1">MAIN</div>
+      <button data-page="home" onclick="navigate('home')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M9 21V12h6v9"/></svg></span><span>Home</span></button>
+      <button data-page="daily" onclick="navigate('daily')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span>Daily Collection</span></button>
+      <button data-page="infomations" onclick="navigate('infomations')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span>Infomations</span></button>
+      <button data-page="analyzer" onclick="navigate('analyzer')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-6 4 3 4-8"/></svg></span><span>Analyzer</span></button>
+      <div class="text-[10px] font-extrabold tracking-[.25em] text-slate-500 px-3 pt-3 pb-1">TRANSACTIONS</div>
+      <button data-page="add-payment" onclick="navigate('add-payment')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M12 15h.01"/></svg></span><span>Add New Payment</span><span class="ml-auto text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md">QUICK</span></button>
+      <button data-page="print-receipt" onclick="navigate('print-receipt')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg></span><span>Print Receipt</span></button>
+      <button data-page="financial" onclick="navigate('financial')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><span>Financial</span></button>
+      <button data-page="add-loan" onclick="navigate('add-loan')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>Add New Loan</span></button>
+      <button data-page="add-customer" onclick="navigate('add-customer')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M8.5 11a4 4 0 100-8 4 4 0 000 8zM20 8v6M23 11h-6"/></svg></span><span>Add New Customer</span></button>
+      <div class="text-[10px] font-extrabold tracking-[.25em] text-slate-500 px-3 pt-3 pb-1">MANAGEMENT</div>
+      <button data-page="loan-manager" onclick="navigate('loan-manager')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></span><span>Loan Manager</span></button>
+      <button data-page="payment-manager" onclick="navigate('payment-manager')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5h.01"/></svg></span><span>Payment Manager</span></button>
+      <button data-page="customer-manager" onclick="navigate('customer-manager')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span>Customer Manager</span></button>
+      <button data-page="calculator" onclick="navigate('calculator')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/></svg></span><span>Loan Calculator</span></button>
+      <button data-page="route-manager" data-admin-only onclick="navigate('route-manager')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h5.5a3.5 3.5 0 000-7h-7a3.5 3.5 0 010-7H15"/></svg></span><span>Route Manager</span></button>
+      <div class="text-[10px] font-extrabold tracking-[.25em] text-slate-500 px-3 pt-3 pb-1">SYSTEM</div>
+      <button data-page="general-settings" data-admin-only onclick="navigate('general-settings')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span><span>General Settings</span></button>
+      <button data-page="printer-settings" data-admin-only onclick="navigate('printer-settings')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg></span><span>Printer Settings</span></button>
+      <button data-page="about" onclick="navigate('about')" class="sidebar-link"><span class="icon-box"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg></span><span>About Developer</span></button>
+      <button onclick="confirmLogout()" class="sidebar-link !text-red-300 hover:!bg-red-500/15"><span class="icon-box !bg-red-500/15 !text-red-400"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></span><span>Log Out</span></button>
+    </nav>
+    <div class="px-4 pb-4">
+      <div class="rounded-2xl p-3 text-[11px] font-semibold" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+        <div class="flex items-center justify-between text-slate-300"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 online-dot"></span> Device Online</span><span class="text-cyan-300 font-mono" id="sideSync">SYNCED</span></div>
+        <div class="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div id="syncBar" class="h-full w-full rounded-full" style="background:linear-gradient(90deg,#22c55e,#22d3ee)"></div></div>
+        <div class="flex justify-between mt-2 text-slate-500"><span>ALFACloud v1.0</span><span id="sideTime" class="font-mono">--:--</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 min-w-0 flex flex-col">
+    <header class="sticky top-0 z-20 bg-white/85 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-3">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-xl bg-slate-900 text-white font-bold">☰</button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 text-[11px] font-bold text-slate-400"><span>ALFACloud</span><span>/</span><span id="crumb" class="text-blue-600">Home</span></div>
+          <h1 id="topTitle" class="text-lg sm:text-xl font-extrabold text-slate-900 truncate">Home</h1>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <div class="hidden md:flex flex-col items-end mr-1"><span id="liveDate" class="text-[11px] font-bold text-slate-500">--</span><span id="liveClock" class="text-sm font-extrabold text-slate-900 font-mono -mt-0.5">--:--:--</span></div>
+          <div onclick="showNetworkInfo()" title="Network status" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 cursor-pointer hover:bg-emerald-100 transition"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 online-dot"></span><span class="text-xs font-extrabold text-emerald-700">Device Online</span></div>
+          <button onclick="quickPayment()" class="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-white text-xs font-extrabold shadow-lg btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)"><span class="text-base leading-none">+</span> PAYMENT</button>
+          <button onclick="quickInfo()" class="flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs font-extrabold shadow btn-press bg-slate-900 text-amber-300 border border-slate-700"><span class="w-4 h-4 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center text-[10px] font-extrabold">i</span> INFO</button>
+          <button onclick="toggleNotifications(event)" class="relative w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center btn-press">🔔<span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-extrabold flex items-center justify-center">3</span></button>
+        </div>
+      </div>
+      <div id="notifDrop" class="hidden absolute right-4 sm:right-6 top-[68px] w-[320px] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 modal-in"></div>
+    </header>
+
+    <main class="flex-1 p-4 sm:p-6 bg-grid min-h-[calc(100vh-76px)]">
+
+      <!-- HOME -->
+      <section id="page-home" class="page">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <select id="homeRouteFilter" onchange="renderHome()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold bg-white"></select>
+          <div class="relative flex-1 min-w-[180px]"><input id="homeSearch" oninput="renderHome()" placeholder="Search customer / ID / phone..." class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-semibold bg-white"><span class="absolute left-3 top-2.5">🔍</span></div>
+          <button onclick="refreshHome()" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-extrabold hover:border-blue-400 hover:text-blue-700 btn-press">⟳ REFRESH</button>
+          <button onclick="goHomePayment()" class="px-4 py-2.5 rounded-xl text-white text-xs font-extrabold shadow btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">+ PAYMENT</button>
+          <button onclick="printHome()" class="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold btn-press">🖨 PRINT</button>
+          <button onclick="showHomeInfo()" class="px-4 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-xs font-extrabold btn-press">ⓘ INFO</button>
+          <button onclick="updateArrears()" class="px-4 py-2.5 rounded-xl bg-red-500 text-white text-xs font-extrabold shadow btn-press">⚠ UPDATE ARREARS</button>
+        </div>
+        <div id="homeSelectedBanner" class="hidden mb-4 rounded-2xl p-4 flex items-center gap-3 text-white modal-in" style="background:linear-gradient(135deg,#0f1c3f,#2563eb)"></div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div class="bg-white rounded-2xl p-4 shadow-card card-hover border-l-4 border-blue-500"><div class="text-[11px] font-extrabold text-slate-400 tracking-wider">CUSTOMERS IN ROUTE</div><div id="homeKpiCust" class="text-2xl font-extrabold">0</div></div>
+          <div class="bg-white rounded-2xl p-4 shadow-card card-hover border-l-4 border-emerald-500"><div class="text-[11px] font-extrabold text-slate-400 tracking-wider">ACTIVE LOANS</div><div id="homeKpiActive" class="text-2xl font-extrabold text-emerald-600">0</div></div>
+          <div class="bg-white rounded-2xl p-4 shadow-card card-hover border-l-4 border-red-500"><div class="text-[11px] font-extrabold text-slate-400 tracking-wider">TOTAL ARREARS</div><div id="homeKpiArrears" class="text-2xl font-extrabold text-red-600">Rs 0</div></div>
+          <div class="bg-white rounded-2xl p-4 shadow-card card-hover border-l-4 border-amber-500"><div class="text-[11px] font-extrabold text-slate-400 tracking-wider">OUTSTANDING</div><div id="homeKpiOut" class="text-2xl font-extrabold text-amber-600">Rs 0</div></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-card overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100"><span class="font-extrabold text-sm">Customer List <span id="homeCount" class="ml-2 text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg">0</span></span><span class="text-[11px] text-slate-400 font-bold">Click a row to select customer</span></div>
+          <div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Cust ID</th><th>Customer</th><th>Route</th><th>Loan ID</th><th>Loan Amount</th><th>Installment</th><th>Paid</th><th>Balance</th><th>Arrears</th><th>Status</th></tr></thead><tbody id="homeTableBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- DAILY COLLECTION -->
+      <section id="page-daily" class="page">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <select id="dailyTypeFilter" onchange="renderDaily()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold bg-white"><option value="all">All Collections</option><option value="due">Due Today</option><option value="overdue">Overdue / Arrears</option><option value="collected">Collected Today</option></select>
+          <select id="dailyRouteFilter" onchange="renderDaily()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold bg-white"></select>
+          <input type="date" id="dailyDate" onchange="renderDaily()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold bg-white">
+          <div class="ml-auto flex gap-2"><button onclick="printDaily()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold btn-press">🖨 PRINT</button><button id="btnDetailed" onclick="toggleDailyDetailed()" class="px-5 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">▦ DETAILED VIEW</button></div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div class="rounded-2xl p-5 text-white shadow-lg card-hover" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)"><div class="text-[11px] font-bold opacity-80 tracking-wider">EXPECTED COLLECTION</div><div id="dailyExpected" class="text-2xl font-extrabold mt-1">Rs 0</div><div class="text-[11px] opacity-75 mt-1">Target for selected route</div></div>
+          <div class="rounded-2xl p-5 text-white shadow-lg card-hover" style="background:linear-gradient(135deg,#059669,#34d399)"><div class="text-[11px] font-bold opacity-80 tracking-wider">COLLECTED TODAY</div><div id="dailyCollected" class="text-2xl font-extrabold mt-1">Rs 0</div><div class="text-[11px] opacity-75 mt-1" id="dailyCollectedSub">0 receipts</div></div>
+          <div class="rounded-2xl p-5 text-white shadow-lg card-hover" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><div class="text-[11px] font-bold opacity-80 tracking-wider">RECORD COUNT</div><div id="dailyCount" class="text-2xl font-extrabold mt-1">0</div><div class="text-[11px] opacity-75 mt-1">Customers to visit</div></div>
+          <div class="bg-white rounded-2xl p-5 shadow-card card-hover"><div class="text-[11px] font-extrabold text-slate-400 tracking-wider">COLLECTION PROGRESS</div><div id="dailyPercent" class="text-2xl font-extrabold text-slate-900 mt-1">0%</div><div class="h-2.5 bg-slate-100 rounded-full mt-2 overflow-hidden"><div id="dailyProgressBar" class="h-full rounded-full transition-all duration-700" style="width:0%;background:linear-gradient(90deg,#22c55e,#06b6d4)"></div></div></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="px-5 py-3 border-b border-slate-100 font-extrabold text-sm">Daily Collection Sheet — <span id="dailyDateLabel" class="text-blue-600"></span></div><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr id="dailyHeadRow"><th>#</th><th>Cust ID</th><th>Customer</th><th>Phone</th><th>Loan ID</th><th>Installment</th><th>Arrears</th><th>Total Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="dailyTableBody"></tbody></table></div></div>
+      </section>
+
+      <!-- INFOMATIONS -->
+      <section id="page-infomations" class="page">
+        <div class="rounded-2xl p-5 mb-4 text-white flex flex-wrap items-center gap-4" style="background:linear-gradient(135deg,#0f1c3f 0%,#1e40af 60%,#0891b2 100%)">
+          <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center text-2xl">📊</div>
+          <div><h2 class="text-xl font-extrabold">Infomations Dashboard</h2><p class="text-xs text-blue-200">General information • Customer & loan summaries • Live key metrics</p></div>
+          <button onclick="renderInfomations();toast('Dashboard metrics refreshed','success','Infomations')" class="ml-auto px-4 py-2 rounded-xl bg-white/15 border border-white/25 text-xs font-extrabold hover:bg-white/25 btn-press">⟳ REFRESH METRICS</button>
+        </div>
+        <div id="infoKpis" class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4"></div>
+        <div class="grid lg:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Portfolio Distribution</h3><div class="h-[220px]"><canvas id="infoPortfolioChart"></canvas></div></div>
+          <div class="bg-white rounded-2xl p-5 shadow-card lg:col-span-2"><h3 class="font-extrabold text-sm mb-3">Monthly Collection Performance (LKR)</h3><div class="h-[220px]"><canvas id="infoMonthlyChart"></canvas></div></div>
+        </div>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="px-5 py-3 border-b font-extrabold text-sm">🏆 Top Performing Routes</div><div id="infoTopRoutes" class="p-4 space-y-3"></div></div>
+          <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="px-5 py-3 border-b font-extrabold text-sm">🕒 Recent Payments</div><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Receipt</th><th>Customer</th><th>Amount</th><th>Date</th></tr></thead><tbody id="infoRecentBody"></tbody></table></div></div>
+        </div>
+      </section>
+
+      <!-- ANALYZER -->
+      <section id="page-analyzer" class="page">
+        <div class="bg-white rounded-2xl shadow-card p-2 mb-4 flex flex-wrap gap-2">
+          <button onclick="switchAnalyzerTab('payment')" data-atab="payment" class="tab-btn active flex-1 min-w-[130px] px-4 py-3 rounded-xl text-xs font-extrabold bg-slate-100">💳 PAYMENT</button>
+          <button onclick="switchAnalyzerTab('arrears')" data-atab="arrears" class="tab-btn flex-1 min-w-[130px] px-4 py-3 rounded-xl text-xs font-extrabold bg-slate-100">⚠ ARREARS</button>
+          <button onclick="switchAnalyzerTab('system')" data-atab="system" class="tab-btn flex-1 min-w-[130px] px-4 py-3 rounded-xl text-xs font-extrabold bg-slate-100">🖥 SYSTEM</button>
+          <button onclick="switchAnalyzerTab('route')" data-atab="route" class="tab-btn flex-1 min-w-[130px] px-4 py-3 rounded-xl text-xs font-extrabold bg-slate-100">🛣 ROUTE</button>
+        </div>
+        <div id="atab-payment" class="atab space-y-4">
+          <div id="analyzerPayKpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+          <div class="grid lg:grid-cols-3 gap-4"><div class="bg-white rounded-2xl p-5 shadow-card lg:col-span-2"><h3 class="font-extrabold text-sm mb-3">Collection Trend — Last 8 Months</h3><div class="h-[240px]"><canvas id="analyzerPaymentLine"></canvas></div></div><div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">By Payment Method</h3><div class="h-[240px]"><canvas id="analyzerMethodPie"></canvas></div></div></div>
+          <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="px-5 py-3 border-b font-extrabold text-sm">Monthly Breakdown</div><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Month</th><th>Expected</th><th>Collected</th><th>Receipts</th><th>Rate</th><th>Status</th></tr></thead><tbody id="analyzerPayTable"></tbody></table></div></div>
+        </div>
+        <div id="atab-arrears" class="atab hidden space-y-4">
+          <div id="analyzerArrKpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+          <div class="grid lg:grid-cols-2 gap-4"><div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Arrears by Route</h3><div class="h-[240px]"><canvas id="analyzerArrearsBar"></canvas></div></div><div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Arrears Aging Buckets</h3><div id="agingBuckets" class="space-y-3 mt-2"></div></div></div>
+          <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="px-5 py-3 border-b font-extrabold text-sm text-red-600">🔴 High-Risk Customers (Arrears &gt; Rs 10,000)</div><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Customer</th><th>Route</th><th>Loan</th><th>Arrears</th><th>Balance</th><th>Action</th></tr></thead><tbody id="analyzerRiskTable"></tbody></table></div></div>
+        </div>
+        <div id="atab-system" class="atab hidden space-y-4">
+          <div class="grid lg:grid-cols-4 gap-3" id="systemHealth"></div>
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-4">System Resources</h3><div id="sysResources" class="space-y-4"></div></div>
+            <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Activity Log</h3><div id="sysLog" class="space-y-2 max-h-[260px] overflow-y-auto text-xs"></div></div>
+          </div>
+        </div>
+        <div id="atab-route" class="atab hidden space-y-4">
+          <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Route Performance Comparison</h3><div class="h-[240px]"><canvas id="analyzerRouteBar"></canvas></div></div>
+          <div id="routeAnalysisGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- ADD NEW PAYMENT -->
+      <section id="page-add-payment" class="page">
+        <div class="grid lg:grid-cols-5 gap-4">
+          <div class="lg:col-span-2 space-y-4">
+            <div class="bg-white rounded-2xl p-5 shadow-card">
+              <h3 class="font-extrabold text-sm mb-3">🔍 Customer ID Lookup</h3>
+              <div class="flex gap-2"><input id="paySearchInput" oninput="searchPayCustomer()" placeholder="Type ID / name / phone..." class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"><button onclick="searchPayCustomer()" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-extrabold btn-press">SEARCH</button></div>
+              <div id="paySearchResults" class="mt-3 space-y-2 max-h-[220px] overflow-y-auto"></div>
+            </div>
+            <div id="payCustomerCard" class="bg-white rounded-2xl p-5 shadow-card"><div class="text-center text-slate-400 text-sm py-6">Select a customer to view loan details</div></div>
+          </div>
+          <div class="lg:col-span-3 space-y-4">
+            <div class="bg-white rounded-2xl p-5 shadow-card">
+              <h3 class="font-extrabold text-sm mb-3">💳 Payment Entry</h3>
+              <div class="grid sm:grid-cols-2 gap-3">
+                <div><label class="text-[11px] font-extrabold text-slate-500">SELECT LOAN</label><select id="payLoanSelect" onchange="onPayLoanChange()" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold"></select></div>
+                <div><label class="text-[11px] font-extrabold text-slate-500">PAYMENT DATE</label><input id="payDate" type="date" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold"></div>
+                <div><label class="text-[11px] font-extrabold text-slate-500">AMOUNT (LKR)</label><input id="payAmount" type="number" oninput="updatePayPreview()" placeholder="0.00" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-extrabold text-blue-700"></div>
+                <div><label class="text-[11px] font-extrabold text-slate-500">METHOD</label><select id="payMethod" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold"><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Online / Card</option></select></div>
+                <div class="sm:col-span-2"><label class="text-[11px] font-extrabold text-slate-500">NOTES</label><input id="payNotes" placeholder="Optional note..." class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+              </div>
+              <div id="payLoanDetails" class="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm"></div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <button onclick="savePayment()" class="flex-1 min-w-[140px] py-3 rounded-xl text-white text-xs font-extrabold shadow btn-press" style="background:linear-gradient(135deg,#059669,#10b981)">✓ SAVE PAYMENT</button>
+                <button onclick="printPayReceipt()" class="flex-1 min-w-[140px] py-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold btn-press">🖨 PRINT RECEIPT</button>
+                <button onclick="sendPaymentSMS()" class="flex-1 min-w-[140px] py-3 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">✉ SEND SMS</button>
+              </div>
+            </div>
+            <div id="payReceiptPreview" class="hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRINT RECEIPT -->
+      <section id="page-print-receipt" class="page">
+        <div class="grid lg:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl p-5 shadow-card">
+            <h3 class="font-extrabold text-sm mb-3">🧾 Find Receipt</h3>
+            <input id="receiptSearch" oninput="renderReceiptList()" placeholder="Receipt no / customer..." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold mb-3">
+            <div id="receiptList" class="space-y-2 max-h-[420px] overflow-y-auto"></div>
+          </div>
+          <div class="lg:col-span-2">
+            <div class="flex justify-end mb-3"><button onclick="doPrintReceipt()" class="px-8 py-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold shadow btn-press">🖨 PRINT RECEIPT</button></div>
+            <div id="receiptDisplay" class="max-w-[420px] mx-auto"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINANCIAL -->
+      <section id="page-financial" class="page">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div class="rounded-2xl p-5 text-white card-hover" style="background:linear-gradient(135deg,#059669,#34d399)"><div class="text-[11px] font-bold opacity-80">TOTAL INCOME (COLLECTIONS)</div><div id="finIncome" class="text-2xl font-extrabold mt-1">Rs 0</div></div>
+          <div class="rounded-2xl p-5 text-white card-hover" style="background:linear-gradient(135deg,#dc2626,#f97316)"><div class="text-[11px] font-bold opacity-80">TOTAL EXPENDITURES</div><div id="finExpense" class="text-2xl font-extrabold mt-1">Rs 0</div></div>
+          <div class="rounded-2xl p-5 text-white card-hover" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)"><div class="text-[11px] font-bold opacity-80">NET PROFIT</div><div id="finNet" class="text-2xl font-extrabold mt-1">Rs 0</div></div>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">➕ Add Expenditure</h3>
+            <div class="space-y-3"><input id="expDate" type="date" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold">
+            <select id="expCategory" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"><option>Staff Salary</option><option>Office Rent</option><option>Fuel & Transport</option><option>Utilities</option><option>Stationery</option><option>Marketing</option><option>Maintenance</option><option>Other</option></select>
+            <input id="expDesc" placeholder="Description..." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+            <input id="expAmount" type="number" placeholder="Amount (LKR)" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-extrabold">
+            <button onclick="addExpense()" class="w-full py-3 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#dc2626,#f97316)">SAVE EXPENDITURE</button></div>
+          </div>
+          <div class="lg:col-span-2 bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">📈 Financial Analyzer</h3>
+            <div class="flex flex-wrap gap-2 mb-4"><input id="finFrom" type="date" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold"><input id="finTo" type="date" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold"><select id="finCatFilter" class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold"><option value="all">All Categories</option><option>Staff Salary</option><option>Office Rent</option><option>Fuel & Transport</option><option>Utilities</option><option>Stationery</option><option>Marketing</option><option>Maintenance</option><option>Other</option></select><button onclick="loadFinancial()" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">LOAD</button></div>
+            <div class="h-[200px] mb-4"><canvas id="finChart"></canvas></div>
+            <div class="overflow-x-auto max-h-[260px] overflow-y-auto"><table class="w-full styled-table"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody id="finTableBody"></tbody></table></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADD NEW LOAN -->
+      <section id="page-add-loan" class="page">
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl p-5 shadow-card">
+            <h3 class="font-extrabold text-sm mb-3">👤 Select Customer</h3>
+            <input id="loanCustomerSearch" oninput="searchLoanCustomer()" placeholder="Search customer..." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold">
+            <div id="loanCustomerResults" class="mt-3 space-y-2 max-h-[180px] overflow-y-auto"></div>
+            <div id="loanSelectedCustomer" class="mt-3"></div>
+            <h3 class="font-extrabold text-sm mt-5 mb-3">📝 Loan Details</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[11px] font-extrabold text-slate-500">LOAN AMOUNT</label><input id="loanAmount" type="number" value="100000" oninput="calculateNewLoan()" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+              <div><label class="text-[11px] font-extrabold text-slate-500">INTEREST % / MONTH</label><input id="loanRate" type="number" step="0.1" value="3" oninput="calculateNewLoan()" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+              <div><label class="text-[11px] font-extrabold text-slate-500">DURATION (MONTHS)</label><input id="loanDuration" type="number" value="12" oninput="calculateNewLoan()" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+              <div><label class="text-[11px] font-extrabold text-slate-500">START DATE</label><input id="loanStartDate" type="date" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-semibold"></div>
+              <div class="col-span-2"><label class="text-[11px] font-extrabold text-slate-500">LOAN TYPE</label><select id="loanType" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-semibold"><option>Business Loan</option><option>Personal Loan</option><option>Emergency Loan</option><option>Agriculture Loan</option><option>Education Loan</option></select></div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="rounded-2xl p-6 text-white" style="background:linear-gradient(135deg,#0f1c3f,#1e40af)">
+              <h3 class="font-extrabold text-sm mb-4 text-cyan-300">⚡ LIVE CALCULATION</h3>
+              <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="rounded-xl p-4" style="background:rgba(255,255,255,.1)"><div class="text-[10px] font-bold opacity-70">INSTALLMENT</div><div id="loanInstallment" class="text-lg font-extrabold text-emerald-300">Rs 0</div><div class="text-[10px] opacity-60">per month</div></div>
+                <div class="rounded-xl p-4" style="background:rgba(255,255,255,.1)"><div class="text-[10px] font-bold opacity-70">END VALUE</div><div id="loanEndValue" class="text-lg font-extrabold text-cyan-300">Rs 0</div><div class="text-[10px] opacity-60">total payable</div></div>
+                <div class="rounded-xl p-4" style="background:rgba(255,255,255,.1)"><div class="text-[10px] font-bold opacity-70">PROFIT</div><div id="loanProfit" class="text-lg font-extrabold text-amber-300">Rs 0</div><div class="text-[10px] opacity-60">interest income</div></div>
+              </div>
+              <div id="loanSchedulePreview" class="mt-4 text-xs max-h-[180px] overflow-y-auto"></div>
+            </div>
+            <div class="flex gap-2"><button onclick="createLoan()" class="flex-1 py-3.5 rounded-xl text-white text-sm font-extrabold shadow btn-press" style="background:linear-gradient(135deg,#059669,#10b981)">✓ CREATE LOAN</button><button onclick="resetLoanForm()" class="px-6 py-3.5 rounded-xl bg-slate-200 text-slate-700 text-sm font-extrabold btn-press">RESET</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADD NEW CUSTOMER -->
+      <section id="page-add-customer" class="page">
+        <div class="bg-white rounded-2xl shadow-card p-6 max-w-4xl mx-auto">
+          <div class="flex items-center gap-3 mb-5"><div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl text-white" style="background:linear-gradient(135deg,#2563eb,#8b5cf6)">👤</div><div><h3 class="font-extrabold">Add New Customer</h3><p class="text-xs text-slate-500">Next ID: <span id="nextCustId" class="font-mono font-bold text-blue-600"></span></p></div></div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2"><label class="text-[11px] font-extrabold text-slate-500">FULL NAME *</label><input id="custName" placeholder="e.g. Sunil Kumara Perera" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">NIC NUMBER *</label><input id="custNIC" placeholder="e.g. 901234567V" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">DATE OF BIRTH</label><input id="custDOB" type="date" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">PHONE *</label><input id="custPhone" placeholder="07X-XXXXXXX" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">ALT PHONE</label><input id="custAltPhone" placeholder="Optional" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div class="sm:col-span-2"><label class="text-[11px] font-extrabold text-slate-500">ADDRESS *</label><input id="custAddress" placeholder="House No, Street" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">CITY</label><input id="custCity" placeholder="City" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">ROUTE *</label><select id="custRoute" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold"></select></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">OCCUPATION</label><input id="custOccupation" placeholder="Occupation" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">MONTHLY INCOME</label><input id="custIncome" type="number" placeholder="Rs" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">GUARANTOR NAME</label><input id="custGuarantor" placeholder="Guarantor" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="text-[11px] font-extrabold text-slate-500">GUARANTOR PHONE</label><input id="custGuarantorPhone" placeholder="07X-XXXXXXX" class="mt-1 w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"></div>
+          </div>
+          <div class="flex gap-2 mt-5"><button onclick="saveCustomer()" class="flex-1 py-3.5 rounded-xl text-white text-sm font-extrabold shadow btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">✓ SAVE CUSTOMER</button><button onclick="clearCustomerForm()" class="px-8 py-3.5 rounded-xl bg-slate-200 text-slate-700 text-sm font-extrabold btn-press">CLEAR</button></div>
+        </div>
+      </section>
+
+      <!-- LOAN MANAGER -->
+      <section id="page-loan-manager" class="page">
+        <div class="flex flex-wrap gap-2 mb-4"><input id="loanMgrSearch" oninput="renderLoanManager()" placeholder="Search loan / customer..." class="flex-1 min-w-[180px] border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white"><select id="loanMgrStatusFilter" onchange="renderLoanManager()" class="border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold bg-white"><option value="all">All Status</option><option>Active</option><option>Arrears</option><option>Completed</option></select><button onclick="navigate('add-loan')" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#059669,#10b981)">+ ADD</button></div>
+        <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Loan ID</th><th>Customer</th><th>Type</th><th>Amount</th><th>Rate</th><th>Dur</th><th>Installment</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead><tbody id="loanMgrBody"></tbody></table></div></div>
+      </section>
+
+      <!-- PAYMENT MANAGER -->
+      <section id="page-payment-manager" class="page">
+        <div class="flex flex-wrap gap-2 mb-4"><input id="payMgrSearch" oninput="renderPaymentManager()" placeholder="Search receipt / customer / loan..." class="flex-1 min-w-[180px] border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white"><button onclick="navigate('add-payment')" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">+ NEW PAYMENT</button></div>
+        <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Loan</th><th>Method</th><th>Amount</th><th>Collector</th><th>Actions</th></tr></thead><tbody id="payMgrBody"></tbody></table></div></div>
+      </section>
+
+      <!-- CUSTOMER MANAGER -->
+      <section id="page-customer-manager" class="page">
+        <div class="flex flex-wrap gap-2 mb-4"><input id="custMgrSearch" oninput="renderCustomerManager()" placeholder="Search customer..." class="flex-1 min-w-[180px] border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white"><button onclick="navigate('add-customer')" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">+ ADD</button></div>
+        <div class="bg-white rounded-2xl shadow-card overflow-hidden"><div class="overflow-x-auto"><table class="w-full styled-table"><thead><tr><th>ID</th><th>Name</th><th>NIC</th><th>Phone</th><th>Route</th><th>Loans</th><th>Outstanding</th><th>Actions</th></tr></thead><tbody id="custMgrBody"></tbody></table></div></div>
+      </section>
+
+      <!-- CALCULATOR -->
+      <section id="page-calculator" class="page">
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <h3 class="font-extrabold mb-5">🧮 Loan Calculator</h3>
+            <div class="space-y-5">
+              <div><div class="flex justify-between text-xs font-extrabold mb-1"><span class="text-slate-500">LOAN AMOUNT</span><span id="calcAmountLabel" class="text-blue-700">Rs 100,000</span></div><input id="calcAmountRange" type="range" min="10000" max="1000000" step="5000" value="100000" oninput="syncCalc('amount',this.value)" class="w-full"><input id="calcAmount" type="number" value="100000" oninput="syncCalc('amount',this.value)" class="mt-2 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+              <div><div class="flex justify-between text-xs font-extrabold mb-1"><span class="text-slate-500">INTEREST RATE (% / MONTH)</span><span id="calcRateLabel" class="text-blue-700">3.0%</span></div><input id="calcRateRange" type="range" min="0.5" max="10" step="0.1" value="3" oninput="syncCalc('rate',this.value)" class="w-full"><input id="calcRate" type="number" step="0.1" value="3" oninput="syncCalc('rate',this.value)" class="mt-2 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+              <div><div class="flex justify-between text-xs font-extrabold mb-1"><span class="text-slate-500">DURATION (MONTHS)</span><span id="calcDurationLabel" class="text-blue-700">12 months</span></div><input id="calcDurationRange" type="range" min="1" max="36" step="1" value="12" oninput="syncCalc('duration',this.value)" class="w-full"><input id="calcDuration" type="number" value="12" oninput="syncCalc('duration',this.value)" class="mt-2 w-full border rounded-xl px-4 py-2.5 text-sm font-extrabold"></div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="rounded-2xl p-4 text-white text-center" style="background:linear-gradient(135deg,#059669,#34d399)"><div class="text-[10px] font-bold opacity-80">INSTALLMENT</div><div id="calcInstallment" class="font-extrabold text-sm sm:text-base mt-1">Rs 0</div></div>
+              <div class="rounded-2xl p-4 text-white text-center" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)"><div class="text-[10px] font-bold opacity-80">END VALUE</div><div id="calcEndValue" class="font-extrabold text-sm sm:text-base mt-1">Rs 0</div></div>
+              <div class="rounded-2xl p-4 text-white text-center" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><div class="text-[10px] font-bold opacity-80">PROFIT</div><div id="calcProfit" class="font-extrabold text-sm sm:text-base mt-1">Rs 0</div></div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow-card"><h3 class="font-extrabold text-sm mb-3">Repayment Schedule</h3><div class="overflow-y-auto max-h-[300px]"><table class="w-full styled-table"><thead><tr><th>#</th><th>Due Date</th><th>Installment</th><th>Principal</th><th>Interest</th></tr></thead><tbody id="calcScheduleBody"></tbody></table></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROUTE MANAGER -->
+      <section id="page-route-manager" class="page">
+        <div class="flex justify-between items-center mb-4"><h3 class="font-extrabold">Route Management <span id="routeCountBadge" class="text-[11px] bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2"></span></h3><button onclick="openRouteModal()" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#059669,#10b981)">+ ADD ROUTE</button></div>
+        <div id="routeGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- GENERAL SETTINGS -->
+      <section id="page-general-settings" class="page">
+        <div class="grid lg:grid-cols-2 gap-4 max-w-5xl mx-auto">
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <h3 class="font-extrabold mb-4">⚙️ Application Preferences</h3>
+            <div class="space-y-4">
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border"><div class="flex-1"><div class="text-sm font-extrabold">Hide Completed Loans</div><div class="text-[11px] text-slate-500">Hide fully paid loans from lists</div></div><div id="setHideCompleted" onclick="toggleSetting('hideCompleted')" class="toggle"></div></div>
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border"><div class="flex-1"><div class="text-sm font-extrabold">Single Payment Only</div><div class="text-[11px] text-slate-500">Allow only one payment per loan per day</div></div><div id="setSinglePayment" onclick="toggleSetting('singlePaymentOnly')" class="toggle"></div></div>
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border"><div class="flex-1"><div class="text-sm font-extrabold">Print Dynamic Contacts</div><div class="text-[11px] text-slate-500">Include collector contact on receipts</div></div><div id="setDynamicContacts" onclick="toggleSetting('printDynamicContacts')" class="toggle on"></div></div>
+              <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border"><div class="flex-1"><div class="text-sm font-extrabold">Auto Sync</div><div class="text-[11px] text-slate-500">Sync data with cloud automatically</div></div><div id="setAutoSync" onclick="toggleSetting('autoSync')" class="toggle on"></div></div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="bg-white rounded-2xl p-6 shadow-card"><h3 class="font-extrabold mb-4">🏢 Company Information</h3><div class="space-y-3"><input id="setCompanyName" class="w-full border rounded-xl px-4 py-2.5 text-sm font-semibold" value="ALFA Micro Finance (Pvt) Ltd"><input id="setCompanyAddress" class="w-full border rounded-xl px-4 py-2.5 text-sm" value="No. 245, Galle Road, Colombo 03"><div class="grid grid-cols-2 gap-3"><input id="setCompanyPhone" class="border rounded-xl px-4 py-2.5 text-sm" value="011-2345678"><input id="setCompanyEmail" class="border rounded-xl px-4 py-2.5 text-sm" value="info@alfacloud.lk"></div></div></div>
+            <div class="bg-white rounded-2xl p-6 shadow-card"><h3 class="font-extrabold mb-4">🌐 Server Configuration</h3><div class="space-y-3"><input id="setServerUrl" class="w-full border rounded-xl px-4 py-2.5 text-sm font-mono" value="https://cloud.alfa.lk"><div class="grid grid-cols-2 gap-3"><input id="setServerPort" class="border rounded-xl px-4 py-2.5 text-sm font-mono" value="8443"><select id="setSyncInterval" class="border rounded-xl px-4 py-2.5 text-sm"><option>Every 5 min</option><option selected>Every 15 min</option><option>Every 30 min</option><option>Every hour</option></select></div><button onclick="saveSettings()" class="w-full py-3 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">💾 SAVE ALL SETTINGS</button></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRINTER SETTINGS -->
+      <section id="page-printer-settings" class="page">
+        <div class="grid lg:grid-cols-2 gap-4 max-w-5xl mx-auto">
+          <div class="bg-white rounded-2xl p-6 shadow-card">
+            <div class="flex items-center gap-3 mb-5"><div class="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-3xl">🖨️</div><div><h3 class="font-extrabold">Thermal Printer</h3><div id="printerStatus" class="text-xs font-bold text-emerald-600">● Connected • Ready</div></div></div>
+            <label class="text-[11px] font-extrabold text-slate-500">BLUETOOTH MAC ADDRESS</label>
+            <input id="printerMac" value="AA:BB:CC:11:22:33" readonly class="mt-1 w-full border rounded-xl px-4 py-3 text-sm font-mono font-bold bg-slate-50 text-center tracking-widest">
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <button onclick="editPrinter()" class="py-3 rounded-xl bg-blue-600 text-white text-xs font-extrabold btn-press">✎ EDIT</button>
+              <button onclick="clearPrinter()" class="py-3 rounded-xl bg-slate-200 text-slate-700 text-xs font-extrabold btn-press">🗑 CLEAR</button>
+              <button onclick="savePrinter()" class="py-3 rounded-xl text-white text-xs font-extrabold btn-press" style="background:linear-gradient(135deg,#059669,#10b981)">💾 SAVE</button>
+              <button onclick="testPrinter()" class="py-3 rounded-xl bg-amber-400 text-slate-900 text-xs font-extrabold btn-press">🧪 TEST PRINT</button>
+            </div>
+            <button onclick="restartApp()" class="mt-2 w-full py-3 rounded-xl bg-red-500 text-white text-xs font-extrabold btn-press">↻ RESTART APPLICATION</button>
+          </div>
+          <div class="space-y-4">
+            <div class="bg-white rounded-2xl p-6 shadow-card"><h3 class="font-extrabold text-sm mb-3">📡 Paired Devices</h3><div id="pairedDevices" class="space-y-2"></div><button onclick="scanPrinters()" class="mt-3 w-full py-2.5 rounded-xl border-2 border-dashed border-blue-300 text-blue-600 text-xs font-extrabold hover:bg-blue-50 btn-press">🔎 SCAN FOR PRINTERS</button></div>
+            <div class="bg-white rounded-2xl p-6 shadow-card"><h3 class="font-extrabold text-sm mb-3">🖨 Print Options</h3><div class="space-y-2 text-sm font-semibold"><label class="flex justify-between items-center p-2 rounded-lg bg-slate-50">Paper Size <select class="border rounded-lg px-2 py-1 text-xs font-bold"><option>58mm</option><option selected>80mm</option></select></label><label class="flex justify-between items-center p-2 rounded-lg bg-slate-50">Copies <select class="border rounded-lg px-2 py-1 text-xs font-bold"><option selected>1</option><option>2</option><option>3</option></select></label><label class="flex justify-between items-center p-2 rounded-lg bg-slate-50">Print Logo <div class="toggle on" onclick="this.classList.toggle('on')"></div></label></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="page-about" class="page">
+        <div class="max-w-2xl mx-auto">
+          <div class="rounded-[28px] overflow-hidden shadow-2xl">
+            <div class="p-8 text-center text-white relative" style="background:linear-gradient(135deg,#0f1c3f,#1e40af 60%,#0891b2)">
+              <div class="w-24 h-24 mx-auto rounded-3xl flex items-center justify-center text-4xl font-extrabold shadow-xl rotate-3" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">RK</div>
+              <h2 class="text-2xl font-extrabold mt-4">Rasika Kulasinghe</h2><p class="text-cyan-300 text-sm font-bold">Lead Software Developer & Architect</p>
+              <div class="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full text-xs font-extrabold" style="background:rgba(255,255,255,.15)">ALFACloud Version 1.0</div>
+            </div>
+            <div class="bg-white p-8">
+              <div class="grid grid-cols-2 gap-3 text-center mb-6">
+                <div class="rounded-xl bg-slate-50 p-3 border"><div class="text-[10px] font-extrabold text-slate-400">CONTACT</div><div class="text-xs font-bold">+94 77 123 4567</div></div>
+                <div class="rounded-xl bg-slate-50 p-3 border"><div class="text-[10px] font-extrabold text-slate-400">EMAIL</div><div class="text-xs font-bold">rasika@alfacloud.lk</div></div>
+                <div class="rounded-xl bg-slate-50 p-3 border"><div class="text-[10px] font-extrabold text-slate-400">RELEASE</div><div class="text-xs font-bold">October 2026</div></div>
+                <div class="rounded-xl bg-slate-50 p-3 border"><div class="text-[10px] font-extrabold text-slate-400">PLATFORM</div><div class="text-xs font-bold">Cloud • Android • Web</div></div>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed text-center">ALFACloud is a complete micro-finance management platform featuring loan lifecycle management, daily collection tracking, route optimization, financial analytics and Bluetooth thermal printing.</p>
+              <div class="flex flex-wrap justify-center gap-2 mt-4"><span class="badge bg-blue-100 text-blue-700">Java</span><span class="badge bg-emerald-100 text-emerald-700">Cloud Sync</span><span class="badge bg-purple-100 text-purple-700">SQLite</span><span class="badge bg-amber-100 text-amber-700">BT Printing</span><span class="badge bg-pink-100 text-pink-700">SMS Gateway</span></div>
+              <div class="text-center mt-6 text-[11px] text-slate-400 font-semibold">© 2026 ALFA Micro Finance (Pvt) Ltd. All rights reserved.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay" class="hidden fixed inset-0 bg-black/55 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onclick="if(event.target===this)closeModal()">
+  <div id="modalBox" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto modal-in">
+    <div class="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white rounded-t-3xl"><h3 id="modalTitle" class="font-extrabold"></h3><button onclick="closeModal()" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-100 hover:text-red-600 font-bold">✕</button></div>
+    <div id="modalBody" class="px-6 py-5"></div>
+    <div id="modalFooter" class="px-6 py-4 border-t flex gap-2 justify-end"></div>
+  </div>
+</div>
+
+<!-- FULL LOADER -->
+<div id="fullLoader" class="hidden fixed inset-0 z-[80] flex flex-col items-center justify-center text-white" style="background:linear-gradient(135deg,#070d1f,#1e3a8a)">
+  <div class="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl font-extrabold mb-4" style="background:linear-gradient(135deg,#f59e0b,#ef4444);animation:floaty 2s ease-in-out infinite">A</div>
+  <div id="loaderText" class="font-extrabold">Restarting ALFACloud...</div>
+  <div class="w-64 h-2 bg-white/15 rounded-full mt-4 overflow-hidden"><div class="h-full w-2/5 rounded-full loader-bar" style="background:linear-gradient(90deg,#22d3ee,#a78bfa)"></div></div>
+</div>
+
+<!-- TOASTS -->
+<div id="toastContainer" class="fixed bottom-5 right-5 z-[70] space-y-2 w-[320px] max-w-[calc(100vw-40px)]"></div>
+
+<script>
+/* ==================== DATA ==================== */
+const TODAY = '2026-10-02';
+let currentUser = {name:'Administrator', role:'Admin'};
+let selectedCustomerId = null, selectedLoanForPay = null, lastPaymentId = null, dailyDetailed = false, currentPage='home', charts={}, pendingConfirm=null, editingRouteId=null, payCustomerSel=null, loanCustomerSel=null, printerEditable=false;
+
+let routes = [
+  {id:'R01', name:'Colombo North', officer:'Nimal Fernando', phone:'077-1234567', target:850000, color:'#2563eb'},
+  {id:'R02', name:'Colombo South', officer:'Kamal Silva', phone:'077-2345678', target:920000, color:'#059669'},
+  {id:'R03', name:'Gampaha', officer:'Sunil Perera', phone:'077-3456789', target:710000, color:'#7c3aed'},
+  {id:'R04', name:'Negombo', officer:'Anoma Jayasuriya', phone:'077-4567890', target:580000, color:'#ea580c'},
+  {id:'R05', name:'Kandy Central', officer:'Ruwan Bandara', phone:'077-5678901', target:640000, color:'#0891b2'},
+  {id:'R06', name:'Kurunegala', officer:'Lalith Kumara', phone:'077-6789012', target:480000, color:'#db2777'}
+];
+let customers = [
+  {id:'C1001',name:'Kamal Perera',nic:'850123456V',phone:'077-1122334',address:'No.12, Main St, Colombo 10',city:'Colombo',route:'R01',occupation:'Shop Owner',income:85000,guarantor:'Nimal Perera',gphone:'077-9990001'},
+  {id:'C1002',name:'Nadeesha Silva',nic:'927834561V',phone:'071-2233445',address:'No.45, Lake Rd, Colombo 08',city:'Colombo',route:'R01',occupation:'Tailor',income:55000,guarantor:'Kasun Silva',gphone:'077-9990002'},
+  {id:'C1003',name:'Sunil Jayawardena',nic:'781234567V',phone:'077-3344556',address:'No.78, Temple Rd, Gampaha',city:'Gampaha',route:'R03',occupation:'Farmer',income:60000,guarantor:'Amal Jayawardena',gphone:'077-9990003'},
+  {id:'C1004',name:'Priya Fernando',nic:'896543234V',phone:'076-4455667',address:'No.23, Beach Rd, Negombo',city:'Negombo',route:'R04',occupation:'Teacher',income:70000,guarantor:'Ruwan Fernando',gphone:'077-9990004'},
+  {id:'C1005',name:'Mohamed Rizwan',nic:'873452189V',phone:'077-5566778',address:'No.90, Market St, Colombo 11',city:'Colombo',route:'R02',occupation:'Trader',income:120000,guarantor:'Mohamed Faiz',gphone:'077-9990005'},
+  {id:'C1006',name:'Anoma Kumari',nic:'908123745V',phone:'071-6677889',address:'No.56, Hill St, Kandy',city:'Kandy',route:'R05',occupation:'Nurse',income:75000,guarantor:'Bandara Kumari',gphone:'077-9990006'},
+  {id:'C1007',name:'Ruwan Bandara',nic:'821345678V',phone:'077-7788990',address:'No.11, Station Rd, Kurunegala',city:'Kurunegala',route:'R06',occupation:'Driver',income:65000,guarantor:'Lalith Bandara',gphone:'077-9990007'},
+  {id:'C1008',name:'Chamari Dias',nic:'935678123V',phone:'076-8899001',address:'No.34, Park Ave, Colombo 05',city:'Colombo',route:'R02',occupation:'Salon Owner',income:95000,guarantor:'Nuwan Dias',gphone:'077-9990008'},
+  {id:'C1009',name:'Lalith Gunasekara',nic:'752345678V',phone:'077-9900112',address:'No.67, River Rd, Gampaha',city:'Gampaha',route:'R03',occupation:'Carpenter',income:58000,guarantor:'Saman Gunasekara',gphone:'077-9990009'},
+  {id:'C1010',name:'Sanduni Rathnayake',nic:'951234890V',phone:'071-1011223',address:'No.89, Flower Rd, Colombo 07',city:'Colombo',route:'R01',occupation:'Designer',income:80000,guarantor:'Kasun Rathnayake',gphone:'077-9990010'},
+  {id:'C1011',name:'Kasun Mendis',nic:'883456123V',phone:'077-2122334',address:'No.5, Sea St, Negombo',city:'Negombo',route:'R04',occupation:'Fisherman',income:70000,guarantor:'Nimal Mendis',gphone:'077-9990011'},
+  {id:'C1012',name:'Dilini Herath',nic:'917890234V',phone:'076-3233445',address:'No.19, Temple Rd, Kandy',city:'Kandy',route:'R05',occupation:'Bank Clerk',income:68000,guarantor:'Amal Herath',gphone:'077-9990012'},
+  {id:'C1013',name:'Nuwan Kulasekara',nic:'801234890V',phone:'077-4344556',address:'No.77, Main Rd, Kurunegala',city:'Kurunegala',route:'R06',occupation:'Mechanic',income:62000,guarantor:'Sunil Kulasekara',gphone:'077-9990013'},
+  {id:'C1014',name:'Tharindu Lakmal',nic:'942345671V',phone:'071-5455667',address:'No.28, School Ln, Colombo 06',city:'Colombo',route:'R02',occupation:'Electrician',income:59000,guarantor:'Ruwan Lakmal',gphone:'077-9990014'},
+  {id:'C1015',name:'Ishara Madushani',nic:'965678902V',phone:'076-6566778',address:'No.41, Garden Rd, Gampaha',city:'Gampaha',route:'R03',occupation:'Baker',income:52000,guarantor:'Nadeesha Madushani',gphone:'077-9990015'},
+  {id:'C1016',name:'Sampath Rajapaksa',nic:'773456890V',phone:'077-7677889',address:'No.63, Lake View, Colombo 09',city:'Colombo',route:'R01',occupation:'Contractor',income:110000,guarantor:'Chamara Rajapaksa',gphone:'077-9990016'},
+  {id:'C1017',name:'Kavindi Senarathne',nic:'981234567V',phone:'071-8788990',address:'No.15, Rose St, Kandy',city:'Kandy',route:'R05',occupation:'Student',income:30000,guarantor:'Nimal Senarathne',gphone:'077-9990017'},
+  {id:'C1018',name:'Dinesh Chandimal',nic:'861345789V',phone:'077-9899001',address:'No.52, Fort Rd, Negombo',city:'Negombo',route:'R04',occupation:'Hotel Staff',income:64000,guarantor:'Kasun Chandimal',gphone:'077-9990018'}
+];
+let loans = [
+  {id:'L2001',customerId:'C1001',amount:150000,rate:3,duration:12,startDate:'2026-03-10',type:'Business Loan'},
+  {id:'L2002',customerId:'C1002',amount:80000,rate:3.5,duration:10,startDate:'2026-05-05',type:'Personal Loan'},
+  {id:'L2003',customerId:'C1003',amount:200000,rate:2.5,duration:18,startDate:'2026-01-20',type:'Agriculture Loan'},
+  {id:'L2004',customerId:'C1004',amount:60000,rate:4,duration:8,startDate:'2026-06-12',type:'Emergency Loan'},
+  {id:'L2005',customerId:'C1005',amount:300000,rate:2.5,duration:24,startDate:'2025-12-01',type:'Business Loan'},
+  {id:'L2006',customerId:'C1006',amount:100000,rate:3,duration:12,startDate:'2026-04-15',type:'Personal Loan'},
+  {id:'L2007',customerId:'C1008',amount:120000,rate:3,duration:12,startDate:'2026-02-08',type:'Business Loan'},
+  {id:'L2008',customerId:'C1009',amount:75000,rate:3.5,duration:10,startDate:'2026-07-01',type:'Personal Loan'},
+  {id:'L2009',customerId:'C1010',amount:90000,rate:3,duration:12,startDate:'2026-01-05',type:'Education Loan'},
+  {id:'L2010',customerId:'C1011',amount:110000,rate:3,duration:12,startDate:'2026-05-20',type:'Business Loan'},
+  {id:'L2011',customerId:'C1012',amount:50000,rate:4,duration:6,startDate:'2026-08-10',type:'Emergency Loan'},
+  {id:'L2012',customerId:'C1014',amount:130000,rate:3,duration:15,startDate:'2026-03-25',type:'Personal Loan'},
+  {id:'L2013',customerId:'C1015',amount:65000,rate:3.5,duration:10,startDate:'2026-06-28',type:'Business Loan'},
+  {id:'L2014',customerId:'C1016',amount:250000,rate:2.5,duration:20,startDate:'2026-02-14',type:'Business Loan'},
+  {id:'L2015',customerId:'C1018',amount:85000,rate:3,duration:12,startDate:'2026-04-02',type:'Personal Loan'},
+  {id:'L2016',customerId:'C1007',amount:70000,rate:3,duration:8,startDate:'2025-11-10',type:'Personal Loan'},
+  {id:'L2017',customerId:'C1013',amount:95000,rate:3,duration:12,startDate:'2026-07-18',type:'Business Loan'},
+  {id:'L2018',customerId:'C1017',amount:40000,rate:4,duration:6,startDate:'2026-09-01',type:'Education Loan'}
+];
+let payments = []; let pSeq=1;
+function seedPayments(){
+  const add=(loanId,date,amount,method)=>{const l=loans.find(x=>x.id===loanId);payments.push({id:'P'+String(pSeq).padStart(4,'0'),receiptNo:'RCP-2026-'+String(pSeq).padStart(4,'0'),loanId,customerId:l.customerId,date,amount,method:method||'Cash',collector:currentUser.name,notes:''});pSeq++;}
+  loans.forEach((l,idx)=>{
+    const c=calcLoan(l.amount,l.rate,l.duration); const n=Math.min(idx%4+2,6);
+    for(let i=0;i<n;i++){const d=new Date(l.startDate);d.setMonth(d.getMonth()+i+1);if(d>new Date(TODAY))break;const ds=d.toISOString().slice(0,10);const amt=(idx%5===2&&i===n-1)?Math.round(c.installment*0.5):Math.round(c.installment);add(l.id,ds,amt,i%3===0?'Cash':(i%3===1?'Bank Transfer':'Cash'));}
+  });
+  const c1=calcLoan(150000,3,12);add('L2001',TODAY,Math.round(c1.installment),'Cash');
+  const c2=calcLoan(80000,3.5,10);add('L2002',TODAY,Math.round(c2.installment),'Cash');
+  const c3=calcLoan(60000,4,8);add('L2004',TODAY,Math.round(c3.installment),'Bank Transfer');
+}
+let expenses=[
+  {id:'E01',date:'2026-10-01',category:'Staff Salary',desc:'Collector salaries - September',amount:180000},
+  {id:'E02',date:'2026-09-28',category:'Office Rent',desc:'Colombo branch rent - October',amount:95000},
+  {id:'E03',date:'2026-09-25',category:'Fuel & Transport',desc:'Route collection fuel',amount:32000},
+  {id:'E04',date:'2026-09-20',category:'Utilities',desc:'Electricity + Water + Internet',amount:18500},
+  {id:'E05',date:'2026-09-15',category:'Stationery',desc:'Receipt rolls & office supplies',amount:12000},
+  {id:'E06',date:'2026-09-10',category:'Maintenance',desc:'Printer maintenance',amount:8500},
+  {id:'E07',date:'2026-09-05',category:'Marketing',desc:'Flyers & promotions',amount:25000}
+];
+let settings={hideCompleted:false,singlePaymentOnly:false,printDynamicContacts:true,autoSync:true};
+let sysLog=[{t:'10:24:15',m:'Admin logged in from 192.168.1.12'},{t:'10:20:02',m:'Cloud sync completed — 128 records'},{t:'09:58:44',m:'Payment RCP-2026-0031 saved (Rs 17,000)'},{t:'09:41:10',m:'New loan L2018 created for C1017'},{t:'09:15:33',m:'Arrears recalculation completed'},{t:'08:59:01',m:'Daily backup completed successfully'}];
+
+/* ==================== HELPERS ==================== */
+const $=id=>document.getElementById(id);
+const fmt=n=>'Rs '+Number(n||0).toLocaleString('en-LK',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtS=n=>'Rs '+Number(n||0).toLocaleString('en-LK',{maximumFractionDigits:0});
+function calcLoan(amount,rate,duration){amount=+amount||0;rate=+rate||0;duration=+duration||1;const interest=amount*(rate/100)*duration;const total=amount+interest;return{interest:Math.round(interest),total:Math.round(total),installment:Math.round(total/duration)};}
+const getCust=id=>customers.find(c=>c.id===id);
+const getLoan=id=>loans.find(l=>l.id===id);
+const getRoute=id=>routes.find(r=>r.id===id);
+function loanPaid(loanId){return payments.filter(p=>p.loanId===loanId).reduce((s,p)=>s+ +p.amount,0);}
+function loanInfo(l){const c=calcLoan(l.amount,l.rate,l.duration);const paid=loanPaid(l.id);const balance=Math.max(0,c.total-paid);const start=new Date(l.startDate),now=new Date(TODAY);let months=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth());months=Math.max(0,Math.min(months,l.duration));const expected=Math.min(c.total,months*c.installment);const arrears=Math.max(0,expected-paid);let status=balance<=0?'Completed':(arrears>1?'Arrears':'Active');return{...c,paid,balance,arrears,status,monthsElapsed:months};}
+function custLoans(cid){return loans.filter(l=>l.customerId===cid);}
+function statusBadge(s){if(s==='Active')return'<span class="badge bg-emerald-100 text-emerald-700">● Active</span>';if(s==='Arrears')return'<span class="badge bg-red-100 text-red-700">● Arrears</span>';return'<span class="badge bg-slate-200 text-slate-600">✓ Completed</span>';}
+function toast(msg,type='success',title=''){
+  const colors={success:['#059669','✓'],error:['#dc2626','✕'],info:['#2563eb','ℹ'],warning:['#d97706','⚠']};
+  const[c,ic]=colors[type]||colors.success;
+  const el=document.createElement('div');
+  el.className='toast-in bg-white rounded-2xl shadow-2xl border-l-4 p-3.5 flex gap-3 items-start';el.style.borderColor=c;
+  el.innerHTML=`<div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold shrink-0" style="background:${c}">${ic}</div><div class="min-w-0"><div class="text-xs font-extrabold">${title||type.toUpperCase()}</div><div class="text-xs text-slate-600 font-semibold">${msg}</div></div>`;
+  $('toastContainer').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='.4s';setTimeout(()=>el.remove(),400)},3800);
+}
+function openModal(title,body,footer=''){ $('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modalFooter').innerHTML=footer||'<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CLOSE</button>';$('modalOverlay').classList.remove('hidden');}
+function closeModal(){$('modalOverlay').classList.add('hidden');pendingConfirm=null;}
+function showConfirm(title,msg,onYes){pendingConfirm=onYes;openModal(title,`<div class="text-center py-2"><div class="w-14 h-14 mx-auto rounded-2xl bg-red-100 flex items-center justify-center text-2xl mb-3">⚠️</div><p class="text-sm font-semibold text-slate-600">${msg}</p></div>`,`<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CANCEL</button><button onclick="pendingConfirm&&pendingConfirm();closeModal()" class="px-6 py-2.5 rounded-xl bg-red-500 text-white text-xs font-extrabold">CONFIRM</button>`);}
+function addLog(m){const t=new Date().toLocaleTimeString('en-GB');sysLog.unshift({t,m});}
+
+/* ==================== AUTH ==================== */
+function handleLogin(e){e.preventDefault();const u=$('loginUser').value.trim().toLowerCase(),p=$('loginPass').value;if((u==='admin'&&p==='admin123')||(u==='collector'&&p==='col123')){enterApp(u==='admin'?'Admin':'Collector');}else{const er=$('loginError');er.textContent='Invalid credentials. Try admin/admin123 or collector/col123.';er.classList.remove('hidden');er.classList.add('shake');setTimeout(()=>er.classList.remove('shake'),500);}}
+function quickLogin(who){$('loginUser').value=who==='admin'?'admin':'collector';$('loginPass').value=who==='admin'?'admin123':'col123';enterApp(who==='admin'?'Admin':'Collector');}
+function enterApp(role){
+  currentUser={name:role==='Admin'?'Administrator':'Field Collector',role};
+  $('loginScreen').style.display='none';$('appRoot').classList.remove('hidden');
+  $('userName').textContent=currentUser.name;$('userRole').textContent=role==='Admin'?'● Admin • Full Access':'● Collector • Limited';$('userAvatar').textContent=role==='Admin'?'AD':'FC';
+  document.querySelectorAll('[data-admin-only]').forEach(el=>{if(role!=='Admin'){el.style.display='none';}else{el.style.display='flex';}});
+  showLoader('Loading ALFACloud workspace...',900,()=>{navigate('home');toast(`Welcome back, ${currentUser.name}! ${role==='Admin'?'All 18 modules unlocked.':'Limited modules visible.'}`,'success','Login Successful');addLog(`${currentUser.name} logged in (${role})`);});
+}
+function confirmLogout(){showConfirm('Log Out','Are you sure you want to log out of ALFACloud V1.0?',()=>{closeModal();showLoader('Logging out securely...',800,()=>{$('appRoot').classList.add('hidden');$('loginScreen').style.display='flex';});});}
+function showLoader(text,ms,cb){$('loaderText').textContent=text;$('fullLoader').classList.remove('hidden');setTimeout(()=>{$('fullLoader').classList.add('hidden');cb&&cb();},ms);}
+function filterMenu(q){q=q.toLowerCase();document.querySelectorAll('#sidebarNav .sidebar-link').forEach(b=>{b.style.display=b.textContent.toLowerCase().includes(q)?'flex':'none';});}
+function toggleSidebar(force){const sb=$('sidebar'),ov=$('sidebarOverlay');const show=force!==undefined?force:sb.classList.contains('-translate-x-full');if(show){sb.classList.remove('-translate-x-full');ov.classList.remove('hidden');}else{if(window.innerWidth<1024){sb.classList.add('-translate-x-full');}ov.classList.add('hidden');}}
+
+/* ==================== NAV ==================== */
+const titles={home:'Home',daily:'Daily Collection',infomations:'Infomations',analyzer:'Analyzer','add-payment':'Add New Payment','print-receipt':'Print Receipt',financial:'Financial','add-loan':'Add New Loan','add-customer':'Add New Customer','loan-manager':'Loan Manager','payment-manager':'Payment Manager','customer-manager':'Customer Manager',calculator:'Loan Calculator','route-manager':'Route Manager','general-settings':'General Settings','printer-settings':'Printer Settings',about:'About Developer'};
+function navigate(page){
+  if(currentUser.role!=='Admin'&&['route-manager','general-settings','printer-settings'].includes(page)){toast('This module is restricted to Admin users.','error','Access Denied');return;}
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=$('page-'+page);if(el)el.classList.add('active');
+  document.querySelectorAll('#sidebarNav .sidebar-link').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  $('topTitle').textContent=titles[page]||page;$('crumb').textContent=titles[page]||page;
+  toggleSidebar(false);
+  ({home:renderHome,daily:renderDaily,infomations:renderInfomations,analyzer:()=>renderAnalyzer(currentATab),'add-payment':renderPayPage,'print-receipt':renderReceiptPage,financial:renderFinancial,'add-loan':()=>{renderLoanCustSearch();calculateNewLoan();},'add-customer':renderAddCust,'loan-manager':renderLoanManager,'payment-manager':renderPaymentManager,'customer-manager':renderCustomerManager,calculator:updateCalculator,'route-manager':renderRoutes,'general-settings':renderSettings,'printer-settings':renderPrinters}[page]||(()=>{}))();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function quickPayment(){navigate('add-payment');if(selectedCustomerId){payCustomerSel=selectedCustomerId;renderPayPage();toast('Selected customer '+selectedCustomerId+' loaded for payment','info','Quick PAYMENT');}}
+function quickInfo(){if(!selectedCustomerId){toast('No customer selected. Select a customer from Home first.','warning','Quick INFO');navigate('home');return;}showLoanInfo(selectedCustomerId);}
+function showNetworkInfo(){openModal('Network Status',`<div class="space-y-3 text-sm"><div class="flex justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-200"><span class="font-bold">Status</span><span class="font-extrabold text-emerald-600">● Device Online</span></div><div class="grid grid-cols-2 gap-2"><div class="p-3 bg-slate-50 rounded-xl"><div class="text-[10px] font-extrabold text-slate-400">SERVER</div><div class="font-mono font-bold text-xs">cloud.alfa.lk:8443</div></div><div class="p-3 bg-slate-50 rounded-xl"><div class="text-[10px] font-extrabold text-slate-400">LATENCY</div><div class="font-bold text-xs">42 ms</div></div><div class="p-3 bg-slate-50 rounded-xl"><div class="text-[10px] font-extrabold text-slate-400">SIGNAL</div><div class="font-bold text-xs">▂▄▆█ Strong</div></div><div class="p-3 bg-slate-50 rounded-xl"><div class="text-[10px] font-extrabold text-slate-400">LAST SYNC</div><div class="font-bold text-xs">Just now</div></div></div></div>`);}
+function toggleNotifications(e){e.stopPropagation();const d=$('notifDrop');if(!d.classList.contains('hidden')){d.classList.add('hidden');return;}
+  const risks=loans.map(l=>({l,i:loanInfo(l)})).filter(x=>x.i.status==='Arrears').slice(0,3);
+  d.innerHTML=`<div class="font-extrabold text-sm px-2 py-1">Notifications</div>`+risks.map(x=>{const c=getCust(x.l.customerId);return`<div class="p-3 rounded-xl bg-red-50 border border-red-100 mb-2"><div class="text-xs font-extrabold text-red-700">⚠ Arrears Alert — ${c.name}</div><div class="text-[11px] text-slate-600">Loan ${x.l.id} overdue ${fmtS(x.i.arrears)}</div></div>`;}).join('')+`<div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100"><div class="text-xs font-extrabold text-emerald-700">✓ Sync Complete</div><div class="text-[11px] text-slate-600">All data synced with cloud server.</div></div>`;
+  d.classList.remove('hidden');setTimeout(()=>document.addEventListener('click',()=>d.classList.add('hidden'),{once:true}),100);}
+
+/* ==================== HOME ==================== */
+function fillRouteSelect(id,all=true){const s=$(id);s.innerHTML=(all?'<option value="all">All Routes</option>':'')+routes.map(r=>`<option value="${r.id}">${r.id} — ${r.name}</option>`).join('');}
+function renderHome(){
+  if(!$('homeRouteFilter').options.length)fillRouteSelect('homeRouteFilter');
+  const rf=$('homeRouteFilter').value,q=($('homeSearch').value||'').toLowerCase();
+  let list=customers.filter(c=>(rf==='all'||c.route===rf)&&(!q||c.name.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)||c.phone.includes(q)));
+  let tA=0,tO=0,tAct=0;const tb=$('homeTableBody');tb.innerHTML='';
+  list.forEach(c=>{
+    const ls=custLoans(c.id).map(l=>({l,i:loanInfo(l)})).filter(x=>!(settings.hideCompleted&&x.i.status==='Completed'));
+    const r=getRoute(c.route);
+    if(!ls.length){tb.innerHTML+=`<tr class="${selectedCustomerId===c.id?'table-row-sel':''} cursor-pointer" onclick="selectHomeCustomer('${c.id}')"><td class="font-mono font-bold text-blue-700">${c.id}</td><td><div class="font-extrabold">${c.name}</div><div class="text-[11px] text-slate-400">${c.phone}</div></td><td><span class="badge" style="background:${r.color}18;color:${r.color}">${r.name}</span></td><td colspan="6" class="text-slate-400 text-xs">No active loans</td><td><span class="badge bg-slate-100 text-slate-500">No Loan</span></td></tr>`;return;}
+    ls.forEach(({l,i},ix)=>{tA+=i.arrears;tO+=i.balance;if(i.status!=='Completed')tAct++;
+      tb.innerHTML+=`<tr class="${selectedCustomerId===c.id?'table-row-sel':''} cursor-pointer" onclick="selectHomeCustomer('${c.id}')"><td class="font-mono font-bold text-blue-700">${ix===0?c.id:''}</td><td>${ix===0?`<div class="font-extrabold">${c.name}</div><div class="text-[11px] text-slate-400">${c.phone}</div>`:''}</td><td>${ix===0?`<span class="badge" style="background:${r.color}18;color:${r.color}">${r.name}</span>`:''}</td><td class="font-mono text-xs font-bold">${l.id}</td><td>${fmtS(l.amount)}</td><td class="font-bold">${fmtS(i.installment)}</td><td class="text-emerald-600 font-bold">${fmtS(i.paid)}</td><td class="font-bold">${fmtS(i.balance)}</td><td class="${i.arrears>0?'text-red-600 font-extrabold':''}">${fmtS(i.arrears)}</td><td>${statusBadge(i.status)}</td></tr>`;});
+  });
+  $('homeCount').textContent=list.length+' customers';$('homeKpiCust').textContent=list.length;$('homeKpiActive').textContent=tAct;$('homeKpiArrears').textContent=fmtS(tA);$('homeKpiOut').textContent=fmtS(tO);
+  const b=$('homeSelectedBanner');
+  if(selectedCustomerId&&getCust(selectedCustomerId)){const c=getCust(selectedCustomerId);b.classList.remove('hidden');b.innerHTML=`<div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-extrabold">${c.name[0]}</div><div class="flex-1"><div class="font-extrabold text-sm">Selected: ${c.name} <span class="font-mono text-cyan-300">${c.id}</span></div><div class="text-[11px] opacity-80">${c.phone} • ${getRoute(c.route).name}</div></div><button onclick="showLoanInfo('${c.id}')" class="px-4 py-2 rounded-xl bg-amber-400 text-slate-900 text-xs font-extrabold">ⓘ INFO</button><button onclick="clearHomeSelection()" class="px-3 py-2 rounded-xl bg-white/15 text-xs font-extrabold">✕</button>`;}
+  else b.classList.add('hidden');
+}
+function selectHomeCustomer(id){selectedCustomerId=id;renderHome();}
+function clearHomeSelection(){selectedCustomerId=null;renderHome();}
+function refreshHome(){renderHome();toast('Customer list refreshed from server.','success','REFRESH');addLog('Home customer list refreshed');}
+function goHomePayment(){if(!selectedCustomerId){toast('Please select a customer first.','warning','PAYMENT');return;}quickPayment();}
+function printHome(){const rf=$('homeRouteFilter').value;openModal('Print — Customer List',`<div class="receipt-paper rounded-xl p-5 text-sm font-mono"><div class="text-center font-extrabold">ALFA MICRO FINANCE<br><span class="text-xs">Customer List — ${rf==='all'?'All Routes':getRoute(rf).name}</span><br><span class="text-xs">${TODAY}</span></div><hr class="my-3 border-dashed"><div class="text-xs space-y-1">${customers.filter(c=>rf==='all'||c.route===rf).slice(0,12).map(c=>`<div class="flex justify-between"><span>${c.id} ${c.name}</span><span>${c.phone}</span></div>`).join('')}</div><hr class="my-3 border-dashed"><div class="text-center text-xs">*** ${customers.filter(c=>rf==='all'||c.route===rf).length} records ***</div></div>`,`<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CLOSE</button><button onclick="closeModal();toast('Customer list sent to printer (80mm).','success','PRINT')" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">🖨 PRINT NOW</button>`);}
+function showHomeInfo(){if(!selectedCustomerId){toast('Select a customer to view loan info.','warning','INFO');return;}showLoanInfo(selectedCustomerId);}
+function showLoanInfo(cid){const c=getCust(cid);if(!c)return;const ls=custLoans(cid);const r=getRoute(c.route);
+  openModal('Loan Info — '+c.name,`<div class="space-y-3 text-sm"><div class="rounded-xl p-4 text-white" style="background:linear-gradient(135deg,#0f1c3f,#2563eb)"><div class="font-extrabold">${c.name} <span class="font-mono text-cyan-300">${c.id}</span></div><div class="text-xs opacity-80">${c.phone} • ${c.nic} • ${r.name}</div></div>${ls.length?ls.map(l=>{const i=loanInfo(l);return`<div class="border rounded-xl p-4"><div class="flex justify-between items-center mb-2"><span class="font-mono font-extrabold text-blue-700">${l.id}</span>${statusBadge(i.status)}</div><div class="grid grid-cols-2 gap-2 text-xs"><div>Amount: <b>${fmtS(l.amount)}</b></div><div>Rate: <b>${l.rate}%/mo</b></div><div>Installment: <b>${fmtS(i.installment)}</b></div><div>Total: <b>${fmtS(i.total)}</b></div><div class="text-emerald-600">Paid: <b>${fmtS(i.paid)}</b></div><div>Balance: <b>${fmtS(i.balance)}</b></div><div class="text-red-600">Arrears: <b>${fmtS(i.arrears)}</b></div><div>Type: <b>${l.type}</b></div></div><div class="h-2 bg-slate-100 rounded-full mt-2 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(i.paid/i.total*100)}%;background:linear-gradient(90deg,#22c55e,#06b6d4)"></div></div></div>`;}).join(''):'<div class="text-center text-slate-400 py-4">No loans found for this customer.</div>'}</div>`,`<button onclick="closeModal();selectedCustomerId='${cid}';quickPayment()" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">+ NEW PAYMENT</button><button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CLOSE</button>`);
+}
+function updateArrears(){openModal('Update Arrears',`<div class="text-center py-3"><div class="text-4xl mb-3">⚙️</div><div class="text-sm font-bold mb-3">Recalculating arrears for all loans...</div><div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div id="arrBar" class="h-full rounded-full transition-all" style="width:5%;background:linear-gradient(90deg,#f59e0b,#ef4444)"></div></div><div id="arrTxt" class="text-xs font-mono mt-2">0 / ${loans.length}</div></div>`,'');
+  let i=0;const t=setInterval(()=>{i++;const b=$('arrBar');if(!b){clearInterval(t);return;}b.style.width=Math.round(i/loans.length*100)+'%';$('arrTxt').textContent=`${i} / ${loans.length}`;if(i>=loans.length){clearInterval(t);closeModal();renderHome();addLog('Arrears updated for all loans');toast('Arrears recalculated for '+loans.length+' loans.','success','UPDATE ARREARS');}},90);}
+
+/* ==================== DAILY ==================== */
+function renderDaily(){
+  if(!$('dailyRouteFilter').options.length){fillRouteSelect('dailyRouteFilter');$('dailyDate').value=TODAY;$('finFrom').value='2026-09-01';$('finTo').value=TODAY;$('payDate').value=TODAY;$('expDate').value=TODAY;$('loanStartDate').value=TODAY;$('dailyDate').value=TODAY;}
+  const type=$('dailyTypeFilter').value,rf=$('dailyRouteFilter').value,dt=$('dailyDate').value||TODAY;
+  $('dailyDateLabel').textContent=dt;
+  let rows=loans.map(l=>({l,c:getCust(l.customerId),i:loanInfo(l)})).filter(x=>x.c&&(rf==='all'||x.c.route===rf)&&x.i.status!=='Completed');
+  if(type==='overdue')rows=rows.filter(x=>x.i.status==='Arrears');
+  const collectedToday=payments.filter(p=>p.date===dt&&(rf==='all'||(getCust(p.customerId)||{}).route===rf));
+  if(type==='collected'){const ids=new Set(collectedToday.map(p=>p.loanId));rows=rows.filter(x=>ids.has(x.l.id));}
+  const expected=rows.reduce((s,x)=>s+x.i.installment+x.i.arrears,0);
+  const collSum=collectedToday.reduce((s,p)=>s+ +p.amount,0);
+  const pct=expected?Math.min(100,Math.round(collSum/expected*100)):0;
+  $('dailyExpected').textContent=fmtS(expected);$('dailyCollected').textContent=fmtS(collSum);$('dailyCollectedSub').textContent=collectedToday.length+' receipts';$('dailyCount').textContent=rows.length;$('dailyPercent').textContent=pct+'%';$('dailyProgressBar').style.width=pct+'%';
+  $('dailyHeadRow').innerHTML=dailyDetailed?'<th>#</th><th>Cust ID</th><th>Customer</th><th>NIC</th><th>Address</th><th>Loan</th><th>Install.</th><th>Arrears</th><th>Total Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th>':'<th>#</th><th>Cust ID</th><th>Customer</th><th>Phone</th><th>Loan ID</th><th>Installment</th><th>Arrears</th><th>Total Due</th><th>Status</th><th>Action</th>';
+  $('dailyTableBody').innerHTML=rows.map((x,ix)=>{const due=x.i.installment+x.i.arrears;const paidToday=collectedToday.find(p=>p.loanId===x.l.id);
+    if(dailyDetailed)return`<tr><td>${ix+1}</td><td class="font-mono font-bold text-blue-700">${x.c.id}</td><td class="font-bold">${x.c.name}</td><td class="text-xs">${x.c.nic}</td><td class="text-xs">${x.c.address}</td><td class="font-mono text-xs">${x.l.id}</td><td>${fmtS(x.i.installment)}</td><td class="text-red-600 font-bold">${fmtS(x.i.arrears)}</td><td class="font-extrabold">${fmtS(due)}</td><td class="text-emerald-600">${fmtS(x.i.paid)}</td><td>${fmtS(x.i.balance)}</td><td>${paidToday?'<span class="badge bg-emerald-100 text-emerald-700">✓ Paid</span>':statusBadge(x.i.status)}</td><td><button onclick="collectDaily('${x.c.id}')" class="px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">COLLECT</button></td></tr>`;
+    return`<tr><td>${ix+1}</td><td class="font-mono font-bold text-blue-700">${x.c.id}</td><td><div class="font-bold">${x.c.name}</div></td><td class="text-xs">${x.c.phone}</td><td class="font-mono text-xs">${x.l.id}</td><td class="font-bold">${fmtS(x.i.installment)}</td><td class="text-red-600 font-bold">${fmtS(x.i.arrears)}</td><td class="font-extrabold">${fmtS(due)}</td><td>${paidToday?'<span class="badge bg-emerald-100 text-emerald-700">✓ Paid</span>':statusBadge(x.i.status)}</td><td><button onclick="collectDaily('${x.c.id}')" class="px-3 py-1.5 rounded-lg text-[11px] font-extrabold text-white" style="background:linear-gradient(135deg,#1d4ed8,#06b6d4)">COLLECT</button></td></tr>`;}).join('')||'<tr><td colspan="13" class="text-center text-slate-400 py-6">No records found</td></tr>';
+}
+function toggleDailyDetailed(){dailyDetailed=!dailyDetailed;$('btnDetailed').textContent=dailyDetailed?'▦ SIMPLE VIEW':'▦ DETAILED VIEW';renderDaily();}
+function collectDaily(cid){selectedCustomerId=cid;payCustomerSel=cid;quickPayment();}
+function printDaily(){toast('Daily collection sheet sent to printer.','success','PRINT');addLog('Daily collection sheet printed');}
+
+/* ==================== INFOMATIONS ==================== */
+function renderInfomations(){
+  const infos=loans.map(l=>loanInfo(l));
+  const totDis=loans.reduce((s,l)=>s+l.amount,0),totOut=infos.reduce((s,i)=>s+i.balance,0),totArr=infos.reduce((s,i)=>s+i.arrears,0),totColl=payments.reduce((s,p)=>s+ +p.amount,0);
+  const todayColl=payments.filter(p=>p.date===TODAY).reduce((s,p)=>s+ +p.amount,0);
+  const kpis=[['👥','Total Customers',customers.length,'#2563eb'],['📄','Active Loans',infos.filter(i=>i.status!=='Completed').length,'#7c3aed'],['💰','Disbursed',fmtS(totDis),'#0891b2'],['📥','Collected',fmtS(totColl),'#059669'],['⚠','Arrears',fmtS(totArr),'#dc2626'],['📅','Today',fmtS(todayColl),'#ea580c']];
+  $('infoKpis').innerHTML=kpis.map(k=>`<div class="bg-white rounded-2xl p-4 shadow-card card-hover border-t-4" style="border-color:${k[3]}"><div class="text-xl">${k[0]}</div><div class="text-[10px] font-extrabold text-slate-400 tracking-wider mt-1">${k[1].toUpperCase()}</div><div class="text-base font-extrabold truncate">${k[2]}</div></div>`).join('');
+  $('infoRecentBody').innerHTML=[...payments].reverse().slice(0,6).map(p=>{const c=getCust(p.customerId)||{name:'?'};return`<tr><td class="font-mono text-xs font-bold text-blue-700">${p.receiptNo}</td><td class="font-bold">${c.name}</td><td class="text-emerald-600 font-bold">${fmtS(p.amount)}</td><td class="text-xs">${p.date}</td></tr>`;}).join('');
+  $('infoTopRoutes').innerHTML=routes.map(r=>{const rLoans=loans.filter(l=>(getCust(l.customerId)||{}).route===r.id);const exp=rLoans.reduce((s,l)=>s+loanInfo(l).total,0);const coll=rLoans.reduce((s,l)=>s+loanInfo(l).paid,0);const pct=exp?Math.round(coll/exp*100):0;return`<div><div class="flex justify-between text-xs font-extrabold mb-1"><span>${r.name}</span><span style="color:${r.color}">${pct}%</span></div><div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${r.color}"></div></div></div>`;}).join('');
+  mkChart('infoPortfolioChart',{type:'doughnut',data:{labels:['Outstanding','Collected','Arrears'],datasets:[{data:[totOut-totArr,totColl,totArr],backgroundColor:['#2563eb','#10b981','#ef4444'],borderWidth:3,borderColor:'#fff'}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11,weight:'bold'}}}}}});
+  const months=['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'];const mv=[420,510,480,620,590,710,680,320];
+  mkChart('infoMonthlyChart',{type:'bar',data:{labels:months,datasets:[{label:'Collection (Rs 000)',data:mv,backgroundColor:'rgba(37,99,235,.85)',borderRadius:8},{label:'Target',data:mv.map(()=>600),type:'line',borderColor:'#f59e0b',borderWidth:2,pointRadius:0,borderDash:[6,4]}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}});
+}
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();const el=$(id);if(el)charts[id]=new Chart(el,cfg);}
+
+/* ==================== ANALYZER ==================== */
+let currentATab='payment';
+function switchAnalyzerTab(t){currentATab=t;document.querySelectorAll('[data-atab]').forEach(b=>b.classList.toggle('active',b.dataset.atab===t));document.querySelectorAll('.atab').forEach(d=>d.classList.add('hidden'));$('atab-'+t).classList.remove('hidden');renderAnalyzer(t);}
+function renderAnalyzer(t){
+  t=t||currentATab;
+  if(t==='payment'){
+    const tot=payments.reduce((s,p)=>s+ +p.amount,0);
+    $('analyzerPayKpis').innerHTML=[['Total Collected',fmtS(tot),'#059669'],['Receipts',payments.length,'#2563eb'],['Avg Ticket',fmtS(tot/Math.max(1,payments.length)),'#7c3aed'],['Today',fmtS(payments.filter(p=>p.date===TODAY).reduce((s,p)=>s+ +p.amount,0)),'#ea580c']].map(k=>`<div class="bg-white rounded-2xl p-4 shadow-card border-l-4" style="border-color:${k[2]}"><div class="text-[10px] font-extrabold text-slate-400">${k[0].toUpperCase()}</div><div class="text-xl font-extrabold">${k[1]}</div></div>`).join('');
+    mkChart('analyzerPaymentLine',{type:'line',data:{labels:['Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'],datasets:[{label:'Collected',data:[420,510,480,620,590,710,680,320],borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.12)',fill:true,tension:.4,borderWidth:3},{label:'Expected',data:[500,540,560,600,620,660,700,720],borderColor:'#f59e0b',borderDash:[6,4],tension:.4,borderWidth:2}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    const cash=payments.filter(p=>p.method==='Cash').length,bt=payments.filter(p=>p.method==='Bank Transfer').length,oth=payments.length-cash-bt;
+    mkChart('analyzerMethodPie',{type:'pie',data:{labels:['Cash','Bank Transfer','Other'],datasets:[{data:[cash,bt,oth],backgroundColor:['#10b981','#2563eb','#a78bfa']}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    $('analyzerPayTable').innerHTML=[['March 2026',500000,420000,88],['April 2026',540000,510000,96],['May 2026',560000,480000,90],['June 2026',600000,620000,112],['July 2026',620000,590000,104],['August 2026',660000,710000,121],['September 2026',700000,680000,118]].map(r=>{const pct=Math.round(r[2]/r[1]*100);return`<tr><td class="font-bold">${r[0]}</td><td>${fmtS(r[1])}</td><td class="text-emerald-600 font-bold">${fmtS(r[2])}</td><td>${r[3]}</td><td><b>${pct}%</b></td><td>${pct>=100?'<span class="badge bg-emerald-100 text-emerald-700">Exceeded</span>':pct>=90?'<span class="badge bg-blue-100 text-blue-700">On Track</span>':'<span class="badge bg-amber-100 text-amber-700">Below</span>'}</td></tr>`;}).join('');
+  }
+  if(t==='arrears'){
+    const arr=loans.map(l=>({l,i:loanInfo(l)})).filter(x=>x.i.arrears>0);
+    const totArr=arr.reduce((s,x)=>s+x.i.arrears,0);
+    $('analyzerArrKpis').innerHTML=[['Total Arrears',fmtS(totArr),'#dc2626'],['Defaulters',arr.length,'#ea580c'],['Arrears Rate',loans.length?Math.round(arr.length/loans.length*100)+'%':'0%','#7c3aed'],['At Risk (>10K)',arr.filter(x=>x.i.arrears>10000).length,'#0891b2']].map(k=>`<div class="bg-white rounded-2xl p-4 shadow-card border-l-4" style="border-color:${k[2]}"><div class="text-[10px] font-extrabold text-slate-400">${k[0].toUpperCase()}</div><div class="text-xl font-extrabold">${k[1]}</div></div>`).join('');
+    mkChart('analyzerArrearsBar',{type:'bar',data:{labels:routes.map(r=>r.name),datasets:[{data:routes.map(r=>loans.filter(l=>(getCust(l.customerId)||{}).route===r.id).reduce((s,l)=>s+loanInfo(l).arrears,0)),backgroundColor:routes.map(r=>r.color),borderRadius:8}]},options:{maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}}}});
+    const b1=arr.filter(x=>x.i.arrears<5000).length,b2=arr.filter(x=>x.i.arrears>=5000&&x.i.arrears<15000).length,b3=arr.filter(x=>x.i.arrears>=15000&&x.i.arrears<30000).length,b4=arr.filter(x=>x.i.arrears>=30000).length;const mx=Math.max(1,b1,b2,b3,b4);
+    $('agingBuckets').innerHTML=[['0 – 5,000 (Mild)',b1,'#22c55e'],['5,000 – 15,000 (Moderate)',b2,'#f59e0b'],['15,000 – 30,000 (High)',b3,'#f97316'],['30,000+ (Critical)',b4,'#ef4444']].map(b=>`<div><div class="flex justify-between text-xs font-extrabold mb-1"><span>${b[0]}</span><span>${b[1]} loans</span></div><div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${b[1]/mx*100}%;background:${b[2]}"></div></div></div>`).join('');
+    $('analyzerRiskTable').innerHTML=arr.filter(x=>x.i.arrears>5000).sort((a,b)=>b.i.arrears-a.i.arrears).map(x=>{const c=getCust(x.l.customerId);return`<tr><td class="font-bold">${c.name}<div class="text-[11px] text-slate-400 font-mono">${c.id}</div></td><td>${getRoute(c.route).name}</td><td class="font-mono text-xs">${x.l.id}</td><td class="text-red-600 font-extrabold">${fmtS(x.i.arrears)}</td><td>${fmtS(x.i.balance)}</td><td class="flex gap-1"><button onclick="showLoanInfo('${c.id}')" class="px-3 py-1.5 rounded-lg bg-amber-400 text-[11px] font-extrabold">INFO</button><button onclick="selectedCustomerId='${c.id}';quickPayment()" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-extrabold">COLLECT</button></td></tr>`;}).join('')||'<tr><td colspan="6" class="text-center py-6 text-slate-400">No high-risk customers 🎉</td></tr>';
+  }
+  if(t==='system'){
+    $('systemHealth').innerHTML=[['🟢','Server','Online • 42ms','#059669'],['💾','Database','1.2 GB / 5 GB','#2563eb'],['👥','Active Users','4 online','#7c3aed'],['⏱','Uptime','99.98% • 214d','#0891b2']].map(k=>`<div class="bg-white rounded-2xl p-4 shadow-card"><div class="text-2xl">${k[0]}</div><div class="text-[11px] font-extrabold text-slate-400 mt-1">${k[1].toUpperCase()}</div><div class="font-extrabold" style="color:${k[3]}">${k[2]}</div></div>`).join('');
+    $('sysResources').innerHTML=[['CPU Usage',34,'#2563eb'],['Memory',58,'#7c3aed'],['Storage',24,'#059669'],['Network',71,'#ea580c']].map(r=>`<div><div class="flex justify-between text-xs font-extrabold mb-1"><span>${r[0]}</span><span>${r[1]}%</span></div><div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${r[1]}%;background:${r[2]}"></div></div></div>`).join('');
+    $('sysLog').innerHTML=sysLog.map(l=>`<div class="flex gap-2 p-2 rounded-lg bg-slate-50"><span class="font-mono text-[10px] text-slate-400 font-bold">${l.t}</span><span class="font-semibold">${l.m}</span></div>`).join('');
+  }
+  if(t==='route'){
+    mkChart('analyzerRouteBar',{type:'bar',data:{labels:routes.map(r=>r.name),datasets:[{label:'Collected',data:routes.map(r=>loans.filter(l=>(getCust(l.customerId)||{}).route===r.id).reduce((s,l)=>s+loanInfo(l).paid,0)/1000),backgroundColor:'#10b981',borderRadius:6},{label:'Outstanding',data:routes.map(r=>loans.filter(l=>(getCust(l.customerId)||{}).route===r.id).reduce((s,l)=>s+loanInfo(l).balance,0)/1000),backgroundColor:'#2563eb',borderRadius:6}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    $('routeAnalysisGrid').innerHTML=routes.map(r=>{const rC=customers.filter(c=>c.route===r.id).length;const rL=loans.filter(l=>(getCust(l.customerId)||{}).route===r.id);const coll=rL.reduce((s,l)=>s+loanInfo(l).paid,0);const pct=Math.min(100,Math.round(coll/r.target*100));return`<div class="bg-white rounded-2xl p-5 shadow-card card-hover border-t-4" style="border-color:${r.color}"><div class="flex justify-between items-start"><div><div class="font-extrabold">${r.name}</div><div class="text-[11px] text-slate-500">${r.officer} • ${rC} customers</div></div><span class="badge" style="background:${r.color}18;color:${r.color}">${r.id}</span></div><div class="mt-3 flex justify-between text-xs font-extrabold"><span>Target ${fmtS(r.target)}</span><span>${pct}%</span></div><div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mt-1"><div class="h-full rounded-full" style="width:${pct}%;background:${r.color}"></div></div><div class="mt-2 text-xs font-bold text-emerald-600">Collected: ${fmtS(coll)}</div></div>`;}).join('');
+  }
+}
+
+/* ==================== ADD PAYMENT ==================== */
+function renderPayPage(){searchPayCustomer();if(payCustomerSel)selectPayCustomer(payCustomerSel,true);}
+function searchPayCustomer(){const q=($('paySearchInput').value||'').toLowerCase();const res=customers.filter(c=>!q||c.name.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)||c.phone.includes(q)).slice(0,6);
+  $('paySearchResults').innerHTML=res.map(c=>`<div onclick="selectPayCustomer('${c.id}')" class="p-3 rounded-xl border cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition flex items-center gap-3 ${payCustomerSel===c.id?'border-blue-500 bg-blue-50':''}"><div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center font-extrabold text-sm">${c.name[0]}</div><div><div class="text-sm font-extrabold">${c.name}</div><div class="text-[11px] text-slate-500 font-mono">${c.id} • ${c.phone}</div></div></div>`).join('')||'<div class="text-xs text-slate-400 text-center py-3">No customers found</div>';}
+function selectPayCustomer(id,silent){payCustomerSel=id;selectedCustomerId=id;const c=getCust(id);searchPayCustomer();
+  const ls=custLoans(id);
+  $('payCustomerCard').innerHTML=`<div class="rounded-xl p-4 text-white mb-3" style="background:linear-gradient(135deg,#0f1c3f,#2563eb)"><div class="font-extrabold">${c.name}</div><div class="text-xs opacity-80 font-mono">${c.id} • ${c.nic}</div><div class="text-xs opacity-80">${c.phone} • ${getRoute(c.route).name}</div></div><div class="text-[11px] font-extrabold text-slate-500 mb-2">LOANS (${ls.length})</div>`+(ls.length?ls.map(l=>{const i=loanInfo(l);return`<div class="p-2.5 rounded-xl bg-slate-50 border mb-2 text-xs flex justify-between"><span class="font-mono font-bold">${l.id}</span><span>Bal: <b>${fmtS(i.balance)}</b></span>${statusBadge(i.status)}</div>`;}).join(''):'<div class="text-xs text-red-500 font-bold">No loans — create one first.</div>');
+  const active=ls.filter(l=>loanInfo(l).status!=='Completed');
+  $('payLoanSelect').innerHTML=active.length?active.map(l=>`<option value="${l.id}">${l.id} — Bal ${fmtS(loanInfo(l).balance)}</option>`).join(''):'<option value="">No active loans</option>';
+  selectedLoanForPay=active[0]?active[0].id:null;onPayLoanChange();
+  if(!silent)toast('Customer '+c.name+' selected','info','Lookup');}
+function onPayLoanChange(){selectedLoanForPay=$('payLoanSelect').value;updatePayPreview();}
+function updatePayPreview(){const l=getLoan(selectedLoanForPay);if(!l){$('payLoanDetails').innerHTML='<span class="text-slate-400">No loan selected</span>';return;}const i=loanInfo(l);const amt=+$('payAmount').value||0;const after=Math.max(0,i.balance-amt);
+  $('payLoanDetails').innerHTML=`<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"><div><div class="font-bold text-slate-400">INSTALLMENT</div><div class="font-extrabold">${fmtS(i.installment)}</div></div><div><div class="font-bold text-slate-400">TOTAL PAYABLE</div><div class="font-extrabold">${fmtS(i.total)}</div></div><div><div class="font-bold text-slate-400">PAID SO FAR</div><div class="font-extrabold text-emerald-600">${fmtS(i.paid)}</div></div><div><div class="font-bold text-slate-400">BALANCE</div><div class="font-extrabold text-red-600">${fmtS(i.balance)}</div></div></div>${amt>0?`<div class="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-xs font-bold">After this payment: Balance <span class="text-blue-700">${fmtS(after)}</span> ${after===0?'🎉 <span class="text-emerald-600">LOAN WILL CLOSE</span>':''}</div>`:''}<button onclick="fillInstallment()" class="mt-2 text-[11px] font-extrabold text-blue-600 hover:underline">› Autofill installment amount (${fmtS(i.installment)})</button>`;}
+function fillInstallment(){const l=getLoan(selectedLoanForPay);if(l){$('payAmount').value=loanInfo(l).installment;updatePayPreview();}}
+function savePayment(){
+  if(!payCustomerSel){toast('Select a customer first.','warning','Validation');return;}
+  if(!selectedLoanForPay){toast('No active loan to pay.','error','Validation');return;}
+  const amt=+$('payAmount').value;if(!amt||amt<=0){toast('Enter a valid amount.','error','Validation');return;}
+  const l=getLoan(selectedLoanForPay),i=loanInfo(l);
+  if(settings.singlePaymentOnly&&payments.some(p=>p.loanId===l.id&&p.date===$('payDate').value)){toast('Single Payment Only is enabled — this loan already has a payment today.','error','Blocked');return;}
+  if(amt>i.balance+1){toast('Amount exceeds balance '+fmtS(i.balance),'error','Validation');return;}
+  const p={id:'P'+String(pSeq).padStart(4,'0'),receiptNo:'RCP-2026-'+String(pSeq).padStart(4,'0'),loanId:l.id,customerId:payCustomerSel,date:$('payDate').value||TODAY,amount:amt,method:$('payMethod').value,collector:currentUser.name,notes:$('payNotes').value};payments.push(p);pSeq++;lastPaymentId=p.id;addLog(`Payment ${p.receiptNo} saved (${fmtS(amt)})`);
+  selectPayCustomer(payCustomerSel,true);$('payAmount').value='';$('payNotes').value='';
+  $('payReceiptPreview').classList.remove('hidden');$('payReceiptPreview').innerHTML=receiptHTML(p)+`<div class="text-center mt-3 flex gap-2 justify-center"><button onclick="printPayReceipt()" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">🖨 PRINT</button><button onclick="sendPaymentSMS()" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">✉ SMS</button></div>`;
+  toast(`Payment ${p.receiptNo} saved — ${fmtS(amt)}`,'success','Payment Saved');}
+function receiptHTML(p){const c=getCust(p.customerId),l=getLoan(p.loanId),i=l?loanInfo(l):null;
+  return`<div class="max-w-[360px] mx-auto"><div class="zigzag"></div><div class="receipt-paper px-6 py-5 font-mono text-[13px]"><div class="text-center"><div class="font-extrabold text-base">ALFA MICRO FINANCE</div><div class="text-[11px]">No.245 Galle Rd, Colombo 03<br>Tel: 011-2345678</div><div class="font-extrabold mt-2 tracking-widest">— PAYMENT RECEIPT —</div></div><hr class="my-3 border-dashed border-slate-300"><div class="space-y-1"><div class="flex justify-between"><span>Receipt:</span><b>${p.receiptNo}</b></div><div class="flex justify-between"><span>Date:</span><b>${p.date}</b></div><div class="flex justify-between"><span>Customer:</span><b>${c?c.name:''}</b></div><div class="flex justify-between"><span>Cust ID:</span><b>${p.customerId}</b></div><div class="flex justify-between"><span>Loan ID:</span><b>${p.loanId}</b></div><div class="flex justify-between"><span>Method:</span><b>${p.method}</b></div>${i?`<div class="flex justify-between"><span>Balance:</span><b>${fmtS(i.balance)}</b></div>`:''}</div><hr class="my-3 border-dashed border-slate-300"><div class="flex justify-between font-extrabold text-base"><span>AMOUNT</span><span>${fmtS(p.amount)}</span></div><hr class="my-3 border-dashed border-slate-300"><div class="text-center text-[11px]">Collector: ${p.collector}${settings.printDynamicContacts?'<br>Hotline: 077-1234567':''}<br><br>Thank you! • ALFACloud v1.0<br>*** Computer generated ***</div></div><div class="zigzag" style="transform:rotate(180deg)"></div></div>`;}
+function printPayReceipt(){const p=payments.find(x=>x.id===lastPaymentId)||payments[payments.length-1];if(!p){toast('No payment to print. Save a payment first.','warning','Print');return;}openModal('Print Receipt — '+p.receiptNo,receiptHTML(p),`<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CLOSE</button><button onclick="closeModal();toast('Receipt sent to thermal printer.','success','PRINT')" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">🖨 PRINT NOW</button>`);}
+function sendPaymentSMS(){const c=getCust(payCustomerSel);const amt=$('payAmount').value||(payments[payments.length-1]||{}).amount||0;if(!c){toast('Select a customer first.','warning','SMS');return;}openModal('Send SMS',`<div class="rounded-2xl bg-slate-900 text-white p-5 text-sm"><div class="text-[11px] text-slate-400 font-bold mb-2">TO: ${c.phone}</div><div class="bg-white/10 rounded-xl p-3">Dear ${c.name}, payment of ${fmtS(amt)} received. Thank you! - ALFA Finance. Hotline 011-2345678</div></div>`,`<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CANCEL</button><button onclick="closeModal();toast('SMS sent to ${c.phone}','success','SMS Gateway')" class="px-6 py-2.5 rounded-xl text-white text-xs font-extrabold" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">✉ SEND NOW</button>`);}
+
+/* ==================== PRINT RECEIPT PAGE ==================== */
+function renderReceiptPage(){renderReceiptList();const p=payments.find(x=>x.id===lastPaymentId)||payments[payments.length-1];$('receiptDisplay').innerHTML=p?receiptHTML(p):'<div class="text-center text-slate-400">No receipts</div>';}
+function renderReceiptList(){const q=($('receiptSearch').value||'').toLowerCase();const list=[...payments].reverse().filter(p=>!q||p.receiptNo.toLowerCase().includes(q)||(getCust(p.customerId)||{name:''}).name.toLowerCase().includes(q)||p.customerId.toLowerCase().includes(q)).slice(0,20);
+  $('receiptList').innerHTML=list.map(p=>{const c=getCust(p.customerId)||{};return`<div onclick="viewReceipt('${p.id}')" class="p-3 rounded-xl border cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition flex justify-between items-center"><div><div class="font-mono text-xs font-extrabold text-blue-700">${p.receiptNo}</div><div class="text-xs font-bold">${c.name||''} • ${p.date}</div></div><div class="font-extrabold text-emerald-600 text-sm">${fmtS(p.amount)}</div></div>`;}).join('');}
+function viewReceipt(id){const p=payments.find(x=>x.id===id);lastPaymentId=id;$('receiptDisplay').innerHTML=receiptHTML(p);}
+function doPrintReceipt(){toast('Receipt sent to thermal printer (80mm).','success','PRINT');addLog('Receipt printed');}
+
+/* ==================== FINANCIAL ==================== */
+function renderFinancial(){const inc=payments.reduce((s,p)=>s+ +p.amount,0),exp=expenses.reduce((s,e)=>s+ +e.amount,0);$('finIncome').textContent=fmtS(inc);$('finExpense').textContent=fmtS(exp);$('finNet').textContent=fmtS(inc-exp);loadFinancial();}
+function addExpense(){const amt=+$('expAmount').value;if(!amt||amt<=0){toast('Enter valid amount','error','Validation');return;}expenses.unshift({id:'E'+Date.now(),date:$('expDate').value||TODAY,category:$('expCategory').value,desc:$('expDesc').value||'General expense',amount:amt});$('expAmount').value='';$('expDesc').value='';addLog('Expenditure added: '+fmtS(amt));renderFinancial();toast('Expenditure recorded.','success','Financial');}
+function loadFinancial(){const f=$('finFrom').value||'2020-01-01',t=$('finTo').value||TODAY,cat=$('finCatFilter').value;const list=expenses.filter(e=>e.date>=f&&e.date<=t&&(cat==='all'||e.category===cat));
+  $('finTableBody').innerHTML=list.map(e=>`<tr><td class="text-xs">${e.date}</td><td><span class="badge bg-slate-100 text-slate-700">${e.category}</span></td><td class="text-xs">${e.desc}</td><td class="font-extrabold text-red-600">${fmtS(e.amount)}</td><td><button onclick="deleteExpense('${e.id}')" class="text-red-500 font-bold hover:text-red-700">🗑</button></td></tr>`).join('')||'<tr><td colspan="5" class="text-center py-6 text-slate-400">No data — press LOAD with different filters</td></tr>';
+  const byCat={};list.forEach(e=>byCat[e.category]=(byCat[e.category]||0)+e.amount);
+  mkChart('finChart',{type:'bar',data:{labels:Object.keys(byCat),datasets:[{data:Object.values(byCat),backgroundColor:['#ef4444','#f97316','#f59e0b','#8b5cf6','#2563eb','#06b6d4','#10b981','#64748b'],borderRadius:8}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  toast(`Analyzer loaded — ${list.length} records, ${fmtS(list.reduce((s,e)=>s+e.amount,0))}`,'info','Financial Analyzer');}
+function deleteExpense(id){showConfirm('Delete Expense','Remove this expenditure record?',()=>{expenses=expenses.filter(e=>e.id!==id);renderFinancial();toast('Expenditure deleted','info','Deleted');});}
+
+/* ==================== ADD LOAN ==================== */
+function renderLoanCustSearch(){searchLoanCustomer();}
+function searchLoanCustomer(){const q=($('loanCustomerSearch').value||'').toLowerCase();$('loanCustomerResults').innerHTML=customers.filter(c=>!q||c.name.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)).slice(0,5).map(c=>`<div onclick="selectLoanCustomer('${c.id}')" class="p-2.5 rounded-xl border cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 text-xs font-bold flex justify-between ${loanCustomerSel===c.id?'border-emerald-500 bg-emerald-50':''}"><span>${c.name}</span><span class="font-mono text-slate-400">${c.id}</span></div>`).join('');}
+function selectLoanCustomer(id){loanCustomerSel=id;const c=getCust(id);searchLoanCustomer();$('loanSelectedCustomer').innerHTML=`<div class="p-3 rounded-xl text-white text-sm" style="background:linear-gradient(135deg,#059669,#10b981)"><div class="font-extrabold">✓ ${c.name} <span class="font-mono opacity-80">${c.id}</span></div><div class="text-[11px] opacity-80">${c.phone} • ${getRoute(c.route).name}</div></div>`;}
+function calculateNewLoan(){const a=+$('loanAmount').value||0,r=+$('loanRate').value||0,d=+$('loanDuration').value||1;const c=calcLoan(a,r,d);$('loanInstallment').textContent=fmtS(c.installment);$('loanEndValue').textContent=fmtS(c.total);$('loanProfit').textContent=fmtS(c.interest);
+  let h='<div class="font-bold mb-1 text-cyan-200">First 6 installments preview:</div>';const sd=new Date($('loanStartDate').value||TODAY);for(let i=1;i<=Math.min(6,d);i++){const dd=new Date(sd);dd.setMonth(dd.getMonth()+i);h+=`<div class="flex justify-between py-1 border-b border-white/10"><span>#${i} — ${dd.toISOString().slice(0,10)}</span><span class="font-bold">${fmtS(c.installment)}</span></div>`;}$('loanSchedulePreview').innerHTML=h;}
+function createLoan(){if(!loanCustomerSel){toast('Select a customer first.','warning','Validation');return;}const a=+$('loanAmount').value,r=+$('loanRate').value,d=+$('loanDuration').value;if(!a||a<1000){toast('Enter valid loan amount (min Rs 1,000).','error','Validation');return;}if(!r||r<=0){toast('Enter valid interest rate.','error','Validation');return;}if(!d||d<1||d>60){toast('Duration must be 1–60 months.','error','Validation');return;}
+  const id='L'+(2019+loans.length-17+1+Math.floor(Math.random()*0)+ (loans.length+1));const nid='L'+(2000+loans.length+1);
+  loans.push({id:nid,customerId:loanCustomerSel,amount:a,rate:r,duration:d,startDate:$('loanStartDate').value||TODAY,type:$('loanType').value});addLog(`New loan ${nid} created (${fmtS(a)})`);toast(`Loan ${nid} created for ${getCust(loanCustomerSel).name} — Installment ${fmtS(calcLoan(a,r,d).installment)}`,'success','Loan Created');resetLoanForm();}
+function resetLoanForm(){loanCustomerSel=null;$('loanCustomerSearch').value='';$('loanSelectedCustomer').innerHTML='';searchLoanCustomer();calculateNewLoan();}
+
+/* ==================== ADD CUSTOMER ==================== */
+function renderAddCust(){fillRouteSelect('custRoute',false);$('nextCustId').textContent='C'+(1000+customers.length+1);}
+function saveCustomer(){const n=$('custName').value.trim(),nic=$('custNIC').value.trim(),ph=$('custPhone').value.trim(),ad=$('custAddress').value.trim();
+  if(!n||!nic||!ph||!ad){toast('Fill all required (*) fields.','error','Validation');return;}
+  if(customers.some(c=>c.nic.toLowerCase()===nic.toLowerCase())){toast('NIC already exists in system.','error','Duplicate');return;}
+  const id='C'+(1000+customers.length+1);
+  customers.push({id,name:n,nic,phone:ph,address:ad,city:$('custCity').value||'-',route:$('custRoute').value,occupation:$('custOccupation').value||'-',income:+$('custIncome').value||0,guarantor:$('custGuarantor').value||'-',gphone:$('custGuarantorPhone').value||'-'});
+  addLog(`New customer ${id} registered`);toast(`Customer ${id} — ${n} saved successfully.`,'success','Customer Saved');clearCustomerForm();renderAddCust();}
+function clearCustomerForm(){['custName','custNIC','custDOB','custPhone','custAltPhone','custAddress','custCity','custOccupation','custIncome','custGuarantor','custGuarantorPhone'].forEach(id=>$(id).value='');}
+
+/* ==================== MANAGERS ==================== */
+function renderLoanManager(){const q=($('loanMgrSearch').value||'').toLowerCase(),f=$('loanMgrStatusFilter').value;
+  const list=loans.map(l=>({l,i:loanInfo(l),c:getCust(l.customerId)})).filter(x=>x.c&&!(!q||x.l.id.toLowerCase().includes(q)||x.c.name.toLowerCase().includes(q)||x.c.id.toLowerCase().includes(q))?false:true).filter(x=>f==='all'||x.i.status===f).filter(x=>!(settings.hideCompleted&&x.i.status==='Completed'));
+  $('loanMgrBody').innerHTML=list.map(x=>`<tr><td class="font-mono font-bold text-blue-700">${x.l.id}</td><td><div class="font-bold">${x.c.name}</div><div class="text-[11px] text-slate-400 font-mono">${x.c.id}</div></td><td class="text-xs">${x.l.type}</td><td>${fmtS(x.l.amount)}</td><td>${x.l.rate}%</td><td>${x.l.duration}m</td><td class="font-bold">${fmtS(x.i.installment)}</td><td class="text-emerald-600">${fmtS(x.i.paid)}</td><td class="font-bold">${fmtS(x.i.balance)}</td><td>${statusBadge(x.i.status)}</td><td><div class="flex gap-1"><button onclick="openLoanEdit('${x.l.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-extrabold">EDIT</button><button onclick="deleteLoan('${x.l.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-100 text-red-600 text-[11px] font-extrabold">DEL</button></div></td></tr>`).join('')||'<tr><td colspan="11" class="text-center py-6 text-slate-400">No loans found</td></tr>';}
+function openLoanEdit(id){const l=getLoan(id);openModal('Edit Loan — '+id,`<div class="grid grid-cols-2 gap-3"><div><label class="text-[11px] font-extrabold">AMOUNT</label><input id="eLoanAmt" type="number" value="${l.amount}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm font-bold"></div><div><label class="text-[11px] font-extrabold">RATE %</label><input id="eLoanRate" type="number" step="0.1" value="${l.rate}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm font-bold"></div><div><label class="text-[11px] font-extrabold">DURATION</label><input id="eLoanDur" type="number" value="${l.duration}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm font-bold"></div><div><label class="text-[11px] font-extrabold">TYPE</label><input id="eLoanType" value="${l.type}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div></div>`,`<button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CANCEL</button><button onclick="saveLoanEdit('${id}')" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-extrabold">SAVE CHANGES</button>`);}
+function saveLoanEdit(id){const l=getLoan(id);l.amount=+$('eLoanAmt').value;l.rate=+$('eLoanRate').value;l.duration=+$('eLoanDur').value;l.type=$('eLoanType').value;closeModal();renderLoanManager();toast('Loan '+id+' updated.','success','Saved');addLog('Loan '+id+' edited');}
+function deleteLoan(id){showConfirm('Delete Loan',`Delete loan <b>${id}</b> and its ${payments.filter(p=>p.loanId===id).length} payment records?`,()=>{loans=loans.filter(l=>l.id!==id);payments=payments.filter(p=>p.loanId!==id);renderLoanManager();toast('Loan '+id+' deleted.','info','Deleted');});}
+function renderPaymentManager(){const q=($('payMgrSearch').value||'').toLowerCase();
+  const list=[...payments].reverse().filter(p=>{const c=getCust(p.customerId)||{name:'',id:''};return!q||p.receiptNo.toLowerCase().includes(q)||c.name.toLowerCase().includes(q)||p.loanId.toLowerCase().includes(q);});
+  $('payMgrBody').innerHTML=list.map(p=>{const c=getCust(p.customerId)||{name:'?'};return`<tr><td class="font-mono text-xs font-extrabold text-blue-700">${p.receiptNo}</td><td class="text-xs">${p.date}</td><td class="font-bold">${c.name}</td><td class="font-mono text-xs">${p.loanId}</td><td><span class="badge bg-slate-100 text-slate-700">${p.method}</span></td><td class="font-extrabold text-emerald-600">${fmtS(p.amount)}</td><td class="text-xs">${p.collector}</td><td><div class="flex gap-1"><button onclick="viewReceiptModal('${p.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-[11px] font-extrabold">VIEW</button><button onclick="deletePayment('${p.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-100 text-red-600 text-[11px] font-extrabold">DEL</button></div></td></tr>`;}).join('');}
+function viewReceiptModal(id){const p=payments.find(x=>x.id===id);openModal('Receipt — '+p.receiptNo,receiptHTML(p),`<button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CLOSE</button><button onclick="closeModal();toast('Sent to printer','success','PRINT')" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">🖨 PRINT</button>`);}
+function deletePayment(id){showConfirm('Delete Payment','Delete this payment record? Loan balance will be recalculated.',()=>{payments=payments.filter(p=>p.id!==id);renderPaymentManager();toast('Payment deleted.','info','Deleted');});}
+function renderCustomerManager(){const q=($('custMgrSearch').value||'').toLowerCase();
+  const list=customers.filter(c=>!q||c.name.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)||c.phone.includes(q)||c.nic.toLowerCase().includes(q));
+  $('custMgrBody').innerHTML=list.map(c=>{const ls=custLoans(c.id);const out=ls.reduce((s,l)=>s+loanInfo(l).balance,0);return`<tr><td class="font-mono font-bold text-blue-700">${c.id}</td><td><div class="font-bold">${c.name}</div><div class="text-[11px] text-slate-400">${c.city}</div></td><td class="text-xs font-mono">${c.nic}</td><td class="text-xs">${c.phone}</td><td><span class="badge" style="background:${getRoute(c.route).color}18;color:${getRoute(c.route).color}">${getRoute(c.route).name}</span></td><td class="text-center font-bold">${ls.length}</td><td class="font-bold">${fmtS(out)}</td><td><div class="flex gap-1"><button onclick="editCustomer('${c.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-extrabold">EDIT</button><button onclick="showLoanInfo('${c.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-[11px] font-extrabold">LOANS</button><button onclick="deleteCustomer('${c.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-100 text-red-600 text-[11px] font-extrabold">DEL</button></div></td></tr>`;}).join('');}
+function editCustomer(id){const c=getCust(id);openModal('Edit Customer — '+id,`<div class="grid grid-cols-2 gap-3"><div class="col-span-2"><label class="text-[11px] font-extrabold">NAME</label><input id="eCName" value="${c.name}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm font-bold"></div><div><label class="text-[11px] font-extrabold">PHONE</label><input id="eCPhone" value="${c.phone}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div><div><label class="text-[11px] font-extrabold">CITY</label><input id="eCCity" value="${c.city}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div><div class="col-span-2"><label class="text-[11px] font-extrabold">ADDRESS</label><input id="eCAddr" value="${c.address}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div><div><label class="text-[11px] font-extrabold">OCCUPATION</label><input id="eCOcc" value="${c.occupation}" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></div><div><label class="text-[11px] font-extrabold">ROUTE</label><select id="eCRoute" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm">${routes.map(r=>`<option value="${r.id}" ${c.route===r.id?'selected':''}>${r.name}</option>`).join('')}</select></div></div>`,`<button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CANCEL</button><button onclick="saveCustEdit('${id}')" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-extrabold">SAVE</button>`);}
+function saveCustEdit(id){const c=getCust(id);c.name=$('eCName').value;c.phone=$('eCPhone').value;c.city=$('eCCity').value;c.address=$('eCAddr').value;c.occupation=$('eCOcc').value;c.route=$('eCRoute').value;closeModal();renderCustomerManager();toast('Customer updated.','success','Saved');}
+function deleteCustomer(id){const n=custLoans(id).length;showConfirm('Delete Customer',`Delete customer <b>${id}</b>${n?` and their ${n} loan(s)`:''}?`,()=>{customers=customers.filter(c=>c.id!==id);const lids=loans.filter(l=>l.customerId===id).map(l=>l.id);loans=loans.filter(l=>l.customerId!==id);payments=payments.filter(p=>!lids.includes(p.loanId));if(selectedCustomerId===id)selectedCustomerId=null;renderCustomerManager();toast('Customer deleted.','info','Deleted');});}
+
+/* ==================== CALCULATOR ==================== */
+function syncCalc(which,v){if(which==='amount'){$('calcAmount').value=v;$('calcAmountRange').value=Math.min(1000000,Math.max(10000,v));}if(which==='rate'){$('calcRate').value=v;$('calcRateRange').value=v;}if(which==='duration'){$('calcDuration').value=v;$('calcDurationRange').value=v;}updateCalculator();}
+function updateCalculator(){const a=+$('calcAmount').value||0,r=+$('calcRate').value||0,d=+$('calcDuration').value||1;const c=calcLoan(a,r,d);
+  $('calcAmountLabel').textContent=fmtS(a);$('calcRateLabel').textContent=r+'%';$('calcDurationLabel').textContent=d+' months';
+  $('calcInstallment').textContent=fmtS(c.installment);$('calcEndValue').textContent=fmtS(c.total);$('calcProfit').textContent=fmtS(c.interest);
+  const princ=Math.round(a/d),int=Math.round(c.interest/d);const sd=new Date(TODAY);let h='';
+  for(let i=1;i<=d;i++){const dd=new Date(sd);dd.setMonth(dd.getMonth()+i);h+=`<tr><td>${i}</td><td class="text-xs">${dd.toISOString().slice(0,10)}</td><td class="font-bold">${fmtS(c.installment)}</td><td>${fmtS(princ)}</td><td class="text-amber-600">${fmtS(int)}</td></tr>`;}
+  $('calcScheduleBody').innerHTML=h;}
+
+/* ==================== ROUTES ==================== */
+function renderRoutes(){$('routeCountBadge').textContent=routes.length+' routes';
+  $('routeGrid').innerHTML=routes.map(r=>{const rc=customers.filter(c=>c.route===r.id).length;const rl=loans.filter(l=>(getCust(l.customerId)||{}).route===r.id);const coll=rl.reduce((s,l)=>s+loanInfo(l).paid,0);const pct=Math.min(100,Math.round(coll/r.target*100));
+  return`<div class="bg-white rounded-2xl p-5 shadow-card card-hover border-t-4" style="border-color:${r.color}"><div class="flex items-start justify-between"><div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-extrabold" style="background:${r.color}">${r.id}</div><div class="flex gap-1"><button onclick="openRouteModal('${r.id}')" class="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-extrabold">EDIT</button><button onclick="deleteRoute('${r.id}')" class="px-3 py-1.5 rounded-lg bg-red-100 text-red-600 text-[11px] font-extrabold">DEL</button></div></div><div class="font-extrabold mt-3">${r.name}</div><div class="text-xs text-slate-500">Officer: ${r.officer}<br>${r.phone}</div><div class="grid grid-cols-3 gap-2 mt-3 text-center"><div class="bg-slate-50 rounded-xl p-2"><div class="font-extrabold text-sm">${rc}</div><div class="text-[10px] text-slate-400 font-bold">CUSTOMERS</div></div><div class="bg-slate-50 rounded-xl p-2"><div class="font-extrabold text-sm">${rl.length}</div><div class="text-[10px] text-slate-400 font-bold">LOANS</div></div><div class="bg-slate-50 rounded-xl p-2"><div class="font-extrabold text-sm">${pct}%</div><div class="text-[10px] text-slate-400 font-bold">TARGET</div></div></div><div class="h-2 bg-slate-100 rounded-full mt-3 overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${r.color}"></div></div></div>`;}).join('');}
+function openRouteModal(id){editingRouteId=id||null;const r=id?getRoute(id):{name:'',officer:'',phone:'',target:500000};
+  openModal((id?'Edit':'Add')+' Route',`<div class="space-y-3"><div><label class="text-[11px] font-extrabold">ROUTE NAME</label><input id="rName" value="${r.name}" placeholder="e.g. Colombo East" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-bold"></div><div><label class="text-[11px] font-extrabold">OFFICER</label><input id="rOfficer" value="${r.officer}" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm"></div><div class="grid grid-cols-2 gap-3"><div><label class="text-[11px] font-extrabold">PHONE</label><input id="rPhone" value="${r.phone}" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm"></div><div><label class="text-[11px] font-extrabold">TARGET</label><input id="rTarget" type="number" value="${r.target}" class="mt-1 w-full border rounded-xl px-4 py-2.5 text-sm font-bold"></div></div></div>`,`<button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 text-xs font-extrabold">CANCEL</button><button onclick="saveRoute()" class="px-5 py-2.5 rounded-xl text-white text-xs font-extrabold" style="background:linear-gradient(135deg,#059669,#10b981)">SAVE ROUTE</button>`);}
+function saveRoute(){const n=$('rName').value.trim();if(!n){toast('Enter route name','error','Validation');return;}
+  if(editingRouteId){const r=getRoute(editingRouteId);r.name=n;r.officer=$('rOfficer').value;r.phone=$('rPhone').value;r.target=+$('rTarget').value||r.target;}
+  else{const colors=['#2563eb','#059669','#7c3aed','#ea580c','#0891b2','#db2777'];routes.push({id:'R'+String(routes.length+1).padStart(2,'0'),name:n,officer:$('rOfficer').value||'-',phone:$('rPhone').value||'-',target:+$('rTarget').value||500000,color:colors[routes.length%colors.length]});}
+  closeModal();renderRoutes();toast('Route saved.','success','Route Manager');addLog('Route saved: '+n);}
+function deleteRoute(id){if(customers.some(c=>c.route===id)){toast('Cannot delete — customers assigned to this route.','error','Blocked');return;}showConfirm('Delete Route','Delete route '+id+'?',()=>{routes=routes.filter(r=>r.id!==id);renderRoutes();toast('Route deleted.','info','Deleted');});}
+
+/* ==================== SETTINGS ==================== */
+function renderSettings(){$('setHideCompleted').classList.toggle('on',settings.hideCompleted);$('setSinglePayment').classList.toggle('on',settings.singlePaymentOnly);$('setDynamicContacts').classList.toggle('on',settings.printDynamicContacts);$('setAutoSync').classList.toggle('on',settings.autoSync);}
+function toggleSetting(k){settings[k]=!settings[k];renderSettings();toast(`${k} → ${settings[k]?'ON':'OFF'}`,'info','Setting');addLog(`Setting ${k} = ${settings[k]}`);}
+function saveSettings(){addLog('General settings saved');toast('Company info & server config saved. Sync interval updated.','success','Settings Saved');}
+
+/* ==================== PRINTER ==================== */
+const paired=[{n:'XPrinter XP-58II',m:'AA:BB:CC:11:22:33',on:true},{n:'Goojprt PT-210',m:'DD:EE:FF:44:55:66',on:false},{n:'MUNBYN 58mm',m:'11:22:33:AA:BB:CC',on:false}];
+function renderPrinters(){$('pairedDevices').innerHTML=paired.map((p,i)=>`<div class="flex items-center gap-3 p-3 rounded-xl border ${p.on?'border-emerald-300 bg-emerald-50':'bg-slate-50'}"><div class="w-9 h-9 rounded-xl ${p.on?'bg-emerald-500':'bg-slate-400'} text-white flex items-center justify-center">🖨</div><div class="flex-1"><div class="text-xs font-extrabold">${p.n}</div><div class="text-[11px] font-mono text-slate-500">${p.m}</div></div><button onclick="pairPrinter(${i})" class="text-[11px] font-extrabold px-3 py-1.5 rounded-lg ${p.on?'bg-emerald-500 text-white':'bg-slate-200'}">${p.on?'ACTIVE':'PAIR'}</button></div>`).join('');}
+function pairPrinter(i){paired.forEach((p,j)=>p.on=i===j);$('printerMac').value=paired[i].m;$('printerStatus').innerHTML='● Connected • '+paired[i].n;$('printerStatus').className='text-xs font-bold text-emerald-600';renderPrinters();toast('Paired with '+paired[i].n,'success','Bluetooth');}
+function editPrinter(){printerEditable=true;$('printerMac').readOnly=false;$('printerMac').classList.remove('bg-slate-50');$('printerMac').focus();toast('MAC address is now editable.','info','EDIT');}
+function clearPrinter(){$('printerMac').value='';toast('MAC address cleared.','warning','CLEAR');}
+function savePrinter(){if(!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test($('printerMac').value.trim())){toast('Invalid MAC format. Use AA:BB:CC:DD:EE:FF','error','Validation');return;}$('printerMac').readOnly=true;$('printerMac').classList.add('bg-slate-50');toast('Printer configuration saved.','success','SAVE');addLog('Printer MAC saved');}
+function testPrinter(){openModal('Test Print',`<div class="receipt-paper rounded-xl p-6 font-mono text-center text-sm"><b>ALFA MICRO FINANCE</b><br><span class="text-xs">*** TEST PRINT SUCCESSFUL ***<br>Printer: XPrinter XP-58II<br>MAC: ${$('printerMac').value}<br>${new Date().toLocaleString()}<br>████ ████ ████<br>Print quality: EXCELLENT</span></div>`,`<button onclick="closeModal()" class="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">DONE</button>`);}
+function scanPrinters(){toast('Scanning for Bluetooth printers...','info','Scan');setTimeout(()=>toast('Found 3 printers nearby.','success','Scan Complete'),1200);}
+function restartApp(){showConfirm('Restart Application','Restart ALFACloud V1.0? Unsaved work may be lost.',()=>{closeModal();showLoader('Restarting ALFACloud V1.0...',2200,()=>{toast('Application restarted successfully.','success','Restart');addLog('Application restarted');});});}
+
+/* ==================== CLOCK & INIT ==================== */
+setInterval(()=>{const n=new Date();const c=n.toLocaleTimeString('en-GB');const cc=$('liveClock');if(cc)cc.textContent=c;const d=$('liveDate');if(d)d.textContent=n.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});const s=$('sideTime');if(s)s.textContent=n.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});},1000);
+document.addEventListener('keydown',e=>{if($('appRoot').classList.contains('hidden'))return;if(e.key==='Escape')closeModal();});
+seedPayments();
+</script>
+</body>
+</html>
